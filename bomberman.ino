@@ -76,14 +76,15 @@ byte smile[8] = { 0x3C, 0x42, 0xA5, 0x81, 0xA5, 0x99, 0x42, 0x3C };
 byte sad[8] = { 0x3C, 0x42, 0xA5, 0x81, 0x99, 0xA5, 0x42, 0x3C };
 
 // LCD
-const byte rs = 9;
+const byte rs = 13;
 const byte en = 8;
 const byte d4 = 7;
 const byte d5 = 6;
 const byte d6 = 5;
 const byte d7 = 4;
 LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
-const int LCDIntensityPin = 3;
+const int lcdContrastPin = 9;
+const int lcdBrightnessPin = 3;
 
 // LCD menu stuff
 Menu lcdMenu(lcd, joystickManager, eepromManager);
@@ -107,6 +108,10 @@ void setup() {
   lc.shutdown(0, false);
   lc.clearDisplay(0);
 
+  pinMode(lcdBrightnessPin, OUTPUT);
+  pinMode(lcdContrastPin, OUTPUT);
+  analogWrite(lcdBrightnessPin, 128);
+  analogWrite(lcdContrastPin, 145);
   lcd.begin(16, 2);
   lcd.clear();
   lcdMenu.greetingsShownTime = millis();
@@ -168,7 +173,8 @@ void calculateElapsedTime() {
 }
 
 void applyConfigurationSettings() {
-  analogWrite(LCDIntensityPin, eepromManager.getLcdBrightness());
+  analogWrite(lcdBrightnessPin, eepromManager.getLcdBrightness());
+  analogWrite(lcdContrastPin, eepromManager.getLcdContrast());
   lc.setIntensity(0, eepromManager.getMatrixBrightness());
 }
 

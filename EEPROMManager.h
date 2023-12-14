@@ -4,17 +4,16 @@
 #include "EEPROM.h"
 
 class EEPROMManager {
-private:
-  const int lcdBrightnessIndex = 0;
-  const int matrixBrightnessIndex = 2;
-
-  void updateBrightness(int updateValue, int minValue, int maxValue, int currentValue, int eepromIndex);
-
 public:
+  const int lcdBrightnessIndex = 0;
+  const int lcdContrastIndex = 2;
+  const int matrixBrightnessIndex = 4;
+
+  int getValueAtIndex(int index);
+  void updateSettingsValue(int updateValue, int minValue, int maxValue, int eepromIndex);
   int getLcdBrightness();
+  int getLcdContrast();
   int getMatrixBrightness();
-  void updateLCDBrightness(int updateValue, int minValue, int maxValue);
-  void updateMatrixBrightness(int updateValue, int minValue, int maxValue);
 };
 
 #endif

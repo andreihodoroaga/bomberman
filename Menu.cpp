@@ -1,6 +1,41 @@
 #include "Arduino.h"
 #include "Menu.h"
 
+Menu::Menu(LiquidCrystal& lcdObj, JoystickManager& joystickManagerObj, EEPROMManager& eepromManagerObj)
+  : lcd(lcdObj), joystickManager(joystickManagerObj), eepromManager(eepromManagerObj) {
+  mainMenu.addFirstChild(&menuStart);
+  menuHighScore.addFirstChild(&highScoreOne);
+  menuSettings.addFirstChild(&settingsContrast);
+  menuAbout.addFirstChild(&aboutGameName);
+  settingsName.addFirstChild(&namePlayer);
+  settingsSounds.addFirstChild(&soundsBack);
+  settingsBrightness.addFirstChild(&brightnessMatrix);
+  settingsContrast.addFirstChild(&contrastLCD);
+}
+
+// Returns the nth sub option of the currentSubMenu, starting from 0.
+MenuItem* Menu::getNthSubOption(int n) {
+  MenuItem* currentSubOption = currentSubMenu->firstChild;
+  for (int i = 0; i < n; i++) {
+    if (currentSubOption->nextSibling != NULL) {
+      currentSubOption = currentSubOption->nextSibling;
+    } else {
+      return NULL;
+    }
+  }
+  return currentSubOption;
+}
+
+int Menu::getCurrentSubMenuSize() {
+  int size = 0;
+  MenuItem* currentSubOption = currentSubMenu->firstChild;
+  while (currentSubOption != NULL) {
+    currentSubOption = currentSubOption->nextSibling;
+    size += 1;
+  }
+  return size;
+}
+
 void Menu::displayGreetingsOnLCD() {
   if (!displayIntro) {
     return;
@@ -24,7 +59,7 @@ void Menu::displayLCDMenu() {
   if (displayBomb) {
     lcd.home();
     // % 2 because we always display only 2 rows
-    lcd.setCursor(currMenuBombCol, currMenuBombRow % 2);
+    lcd.setCursor(0, currMenuBombRow % 2);
     lcd.write(bombCharIndex);
     displayBomb = false;
   }
@@ -53,158 +88,158 @@ void Menu::displayTextOnLCD(const char* text, int textStartIndex, int col, int l
 void Menu::displayCurrentMenuOptions() {
   lcd.clear();
   displayBomb = true;
-  if (currMenuOption == 0 && currMenuSubOption == -1) {
-    // which 2 rows to print (first 2 / last 2)
-    int menuRowStart = currMenuBombRow < 2 ? 0 : 2;
-    lcd.setCursor(1, 0);
-    lcd.print(menuOptions[menuRowStart]);
-    lcd.setCursor(1, 1);
-    lcd.print(menuOptions[menuRowStart + 1]);
-  }
-  if (currMenuOption == 1) {
-    lcd.noAutoscroll();
-    if (currMenuBombRow < 2) {
-      displayTextOnLCD(menuAboutSection[0], 0, 1, 0);
-      displayTextOnLCD(menuAboutSection[1], aboutSectionNameStartIndex, 1, 1);
-    } else {
-      displayTextOnLCD(menuAboutSection[2], aboutSectionGitLinkStartIndex, 1, 0);
-      displayTextOnLCD(menuAboutSection[3], 0, 1, 1);
-    }
-  }
-  if (currMenuOption == 2) {
-    if (currMenuSubOption == -1) {
-      displayTextOnLCD(menuSettingsSection[0], 0, 1, 0);
-      displayTextOnLCD(menuSettingsSection[1], 0, 1, 1);
-    }
-    if (currMenuSubOption == 0) {
-      if (currMenuBombRow < 2) {
-        displayTextOnLCD(brightnessSettings[0], 0, 1, 0);
-        displayTextOnLCD(brightnessSettings[1], 0, 1, 1);
-        addBrightnessValueOnDisplay();
-      } else {
-        displayTextOnLCD(brightnessSettings[2], 0, 1, 0);
-      }
-    }
+
+  MenuItem* currSubOption;
+  MenuItem* nextSubOption;
+  int currRow = currMenuBombRow % 2 == 0 ? currMenuBombRow : currMenuBombRow - 1;
+  int nextRow = currMenuBombRow % 2 == 0 ? currMenuBombRow + 1 : currMenuBombRow;
+  currSubOption = getNthSubOption(currRow);
+  nextSubOption = getNthSubOption(nextRow);
+  displayTextOnLCD(currSubOption->label, getTextStartIndex(currSubOption->label), 1, 0);
+  displaySettingsValue(currRow, currSubOption);
+  if (nextSubOption != NULL) {
+    displayTextOnLCD(nextSubOption->label, getTextStartIndex(nextSubOption->label), 1, 1);
+    displaySettingsValue(nextRow, nextSubOption);
   }
 }
 
-void Menu::addBrightnessValueOnDisplay() {
-  lcd.setCursor(brightnessNumberColIdx, 0);
-  lcd.print(eepromManager.getLcdBrightness());
-  lcd.setCursor(brightnessNumberColIdx, 1);
-  lcd.print(eepromManager.getMatrixBrightness());
+int Menu::getTextStartIndex(char* label) {
+  if (strcmp(label, githubLink) == 0) {
+    return aboutSectionGitLinkStartIndex;
+  } 
+  if (strcmp(label, creatorName) == 0) {
+    return aboutSectionNameStartIndex;
+  }
+  return 0;
+}
+
+void Menu::displaySettingsValue(int row, MenuItem* subOption) {
+  if (currentSubMenu->label != brightnessSectionName && currentSubMenu->label != contrastSectionName) {
+    return;
+  }
+
+  int writeIdx = strlen(subOption->label) + 2; // +2 because of the bomb at index 0
+  lcd.setCursor(writeIdx, row);
+  int settingValue = getSettingEepromValue(currentSubMenu->label, subOption->label);
+  if (settingValue == -1) {
+    return;
+  }
+  lcd.print(settingValue);
+}
+
+int Menu::getSettingEepromValue(char* mainCategory, char* subCategory) {
+  if (strcmp(mainCategory, brightnessSectionName) == 0) {
+    if (strcmp(subCategory, lcdSectionName) == 0) {
+      return eepromManager.getLcdBrightness();
+    } else if (strcmp(subCategory, matrixSectionName) == 0) {
+      return eepromManager.getMatrixBrightness();
+    }
+  } else if (strcmp(mainCategory, contrastSectionName) == 0) {
+    if (strcmp(subCategory, lcdSectionName) == 0) {
+      return eepromManager.getLcdContrast();
+    }
+  }
+  return -1;
 }
 
 void Menu::handleJoystickMenuPress() {
   if (!joystickManager.isPressed() || millis() - lastMenuPress < 400) {
     return;
   }
-
   lastMenuPress = millis();
 
-  if (currMenuOption == 0) {
-    if (currMenuBombCol == 0 && currMenuBombRow == 0) {
-      canStartGame = true;
-    }
-    if (currMenuBombCol == 0 && currMenuBombRow == 1) {
-      currMenuOption = 1;  // about
-      resetMenuOptions();
-    }
-    if (currMenuBombCol == 0 && currMenuBombRow == 2) {
-      currMenuOption = 2;  // settings
-      resetMenuOptions();
-    }
+  MenuItem* selectedMenuItem = getNthSubOption(currMenuBombRow);
+  if (strcmp(selectedMenuItem->label, startSectionName) == 0) {
+    canStartGame = true;
+    return;
   }
-
-  // handle back
-  if ((currMenuOption == 1 && currMenuBombRow == 3) || (currMenuOption == 2 && currMenuBombRow == 1 && currMenuSubOption == -1)) {
-    currMenuOption = 0;
-    currMenuSubOption = -1;
-    canEnterBrightness = false;
+  if (strcmp(selectedMenuItem->label, backSectionName) == 0) {
+    currentSubMenu = currentSubMenu->parent;
     resetMenuOptions();
+    return;
   }
-
-  if (currMenuOption == 2) {
-    if (currMenuSubOption == -1) {
-      if (currMenuBombRow == 0 && canEnterBrightness) {
-        currMenuSubOption = 0;
-        resetMenuOptions();
-      } else {
-        canEnterBrightness = true;
-      }
-    } else if (currMenuSubOption == 0) {
-      if (currMenuBombRow == 2) {  // back
-        currMenuOption = 2;
-        currMenuSubOption = -1;
-        canEnterBrightness = true;
-        resetMenuOptions();
-      }
-    }
+  if (selectedMenuItem->firstChild != NULL) {
+    menuBack.parent = currentSubMenu->parent;
+    currentSubMenu = selectedMenuItem;
+    resetMenuOptions();
   }
 }
 
 void Menu::resetMenuOptions() {
   displayMenuOptions = true;
   currMenuBombRow = 0;
-  currMenuBombCol = 0;
 }
 
 void Menu::handleJoystickMenuChange() {
   int oldRow = currMenuBombRow;
-  int oldCol = currMenuBombCol;
+
   switch (joystickManager.getMovementDirection()) {
+    case NONE:
+      return;
     case UP:
       if (currMenuBombRow > 0) {
         currMenuBombRow -= 1;
       }
       break;
     case DOWN:
-      if (currMenuBombRow < currMenuHeight - 1) {
+      if (currMenuBombRow < getCurrentSubMenuSize() - 1) {
         currMenuBombRow += 1;
       }
       break;
     case LEFT:
-      // scroll texts at about section
-      if (currMenuOption == 1) {
-        if (currMenuBombRow == 1) {
-          aboutSectionNameStartIndex = aboutSectionNameStartIndex == 5 ? aboutSectionNameStartIndex - 5 : aboutSectionNameStartIndex;
-        } else if (currMenuBombRow == 2) {
-          aboutSectionGitLinkStartIndex = aboutSectionGitLinkStartIndex > 0 ? aboutSectionGitLinkStartIndex - 5 : aboutSectionGitLinkStartIndex;
-        }
-      }
-      handleJoystickBrightnessUpdates(-1);
+      handleBrightnessAndContrastUpdates(-1);
+      handleScrollText(-1);
       break;
     case RIGHT:
-      if (currMenuOption == 1) {
-        if (currMenuBombRow == 1) {
-          aboutSectionNameStartIndex = aboutSectionNameStartIndex == 0 ? aboutSectionNameStartIndex + 5 : aboutSectionNameStartIndex;
-        } else if (currMenuBombRow == 2) {
-          aboutSectionGitLinkStartIndex = aboutSectionGitLinkStartIndex <= 40 ? aboutSectionGitLinkStartIndex + 5 : aboutSectionGitLinkStartIndex;
-        }
-      }
-      handleJoystickBrightnessUpdates(1);
+      handleBrightnessAndContrastUpdates(1);
+      handleScrollText(1);
       break;
     default:
       return;
   }
   // delete old bomb
-  if (currMenuBombRow != oldRow || currMenuBombCol != oldCol) {
-    lcd.setCursor(oldCol, oldRow);
+  if (currMenuBombRow != oldRow) {
+    lcd.setCursor(0, oldRow);
     lcd.print(" ");
   }
   displayBomb = true;
   displayMenuOptions = true;
 }
 
-void Menu::handleJoystickBrightnessUpdates(int valueMultiplier) {
-  if (currMenuOption == 2 && currMenuSubOption == 0) {
-    if (currMenuBombRow == 0) {
-      eepromManager.updateLCDBrightness(lcdUpdateStep * valueMultiplier, minLcdBrightness, maxLcdBrightness);
-    }
-    if (currMenuBombRow == 1) {
-      eepromManager.updateMatrixBrightness(matrixUpdateStep * valueMultiplier, minMatrixBrightness, maxMatrixBrightness);
-    }
+void Menu::handleScrollText(int valueMultiplier) {
+  if (strcmp(currentSubMenu->label, aboutSectionName) != 0) {
+    return;
   }
+  MenuItem* currentSubOption = getNthSubOption(currMenuBombRow);
+  if (strcmp(currentSubOption->label, githubLink) == 0) {
+    updateMenuScrollTextIndex(aboutSectionGitLinkStartIndex, valueMultiplier, githubLink);
+  } 
+  if (strcmp(currentSubOption->label, creatorName) == 0) {
+    updateMenuScrollTextIndex(aboutSectionNameStartIndex, valueMultiplier, creatorName);
+  }
+}
+
+void Menu::updateMenuScrollTextIndex(int& index, int valueMultiplier, char* sectionName) {
+  int newValue = index + valueMultiplier * scrollMenuStep;
+  index = (newValue >= 0 && newValue <= strlen(sectionName) - lcdCols + scrollMenuStep) ? newValue : index; 
+}
+
+void Menu::handleBrightnessAndContrastUpdates(int valueMultiplier) {
+  MenuItem* currentSubOption = getNthSubOption(currMenuBombRow);
+  if (currentSubMenu->label != brightnessSectionName && currentSubMenu->label != contrastSectionName) {
+    return;
+  }
+
+  if (strcmp(currentSubMenu->label, brightnessSectionName) == 0) {
+    if (strcmp(currentSubOption->label, lcdSectionName) == 0) {
+      eepromManager.updateSettingsValue(lcdBrightnessUpdateStep * valueMultiplier, minLcdBrightness, maxLcdBrightness, eepromManager.lcdBrightnessIndex);
+    } else if (strcmp(currentSubOption->label, matrixSectionName) == 0) {
+      eepromManager.updateSettingsValue(matrixBrightnessUpdateStep * valueMultiplier, minMatrixBrightness, maxMatrixBrightness, eepromManager.matrixBrightnessIndex);
+    }
+  } else if (strcmp(currentSubMenu->label, contrastSectionName) == 0) {
+    eepromManager.updateSettingsValue(lcdContrastUpdateStep * valueMultiplier, minLcdContrast, maxLcdContrast, eepromManager.lcdContrastIndex);
+  }
+
 }
 
 void Menu::displayGameInfo(int bombsUsed, unsigned long elapsedTime) {
@@ -231,7 +266,7 @@ void Menu::displayEndGameMessage(const char* text) {
     lcd.setCursor(0, 1);
     displayTextOnLCD(endGameContinueText, lastEndGameLetterIdx, 0, 1);
     lastEndGameLetterChange = millis();
-    int textNotOnScreenSize = strlen(endGameContinueText) - lcdCols + 2; 
+    int textNotOnScreenSize = strlen(endGameContinueText) - lcdCols + 2;
     lastEndGameLetterIdx = (lastEndGameLetterIdx + 1) % textNotOnScreenSize;
   }
 }
