@@ -1,8 +1,8 @@
 #include "Arduino.h"
 #include "Menu.h"
 
-Menu::Menu(LiquidCrystal& lcdObj, JoystickManager& joystickManagerObj, EEPROMManager& eepromManagerObj)
-  : lcd(lcdObj), joystickManager(joystickManagerObj), eepromManager(eepromManagerObj) {
+Menu::Menu(LiquidCrystal& lcdObj, Joystick& joystickObj, Storage& storageObj)
+  : lcd(lcdObj), joystick(joystickObj), storage(storageObj) {
   mainMenu.addFirstChild(&menuStart);
   menuHighScore.addFirstChild(&highScoreOne);
   menuSettings.addFirstChild(&settingsName);
@@ -98,8 +98,8 @@ void Menu::displayCurrentMenuOptions() {
   // The how to play section is very large so we have to load it from eeprom
   // so that it is only stored in local memory when showing this submenu
   if (currentSubMenu->label == howToPlaySectionName) {
-    char buffer[eepromManager.howToPlaySize];
-    eepromManager.getHowToPlayMessage(buffer);
+    char buffer[storage.howToPlaySize];
+    storage.getHowToPlayMessage(buffer);
     displayTextOnLCD(buffer, getTextStartIndex(currentSubMenu->label), 1, 0);
   } else {
     displayTextOnLCD(currSubOption->label, getTextStartIndex(currSubOption->label), 1, 0);
@@ -133,31 +133,31 @@ void Menu::displaySettingsValue(int row, MenuItem* subOption) {
   int writeIdx = strlen(subOption->label) + 2;  // +2 because of the bomb at index 0
   lcd.setCursor(writeIdx, row);
   char settingValue[7];
-  getSettingEepromValue(currentSubMenu->label, subOption->label, settingValue);
+  getSettingStorageValue(currentSubMenu->label, subOption->label, settingValue);
   if (settingValue == NULL) {
     return;
   }
   lcd.print(settingValue);
 }
 
-void Menu::getSettingEepromValue(char* mainCategory, char* subCategory, char* buffer) {
+void Menu::getSettingStorageValue(char* mainCategory, char* subCategory, char* buffer) {
   if (strcmp(mainCategory, brightnessSectionName) == 0) {
     if (strcmp(subCategory, lcdSectionName) == 0) {
-      itoa(eepromManager.getLcdBrightness(), buffer, 10);
+      itoa(storage.getLcdBrightness(), buffer, 10);
     } else if (strcmp(subCategory, matrixSectionName) == 0) {
-      itoa(eepromManager.getMatrixBrightness(), buffer, 10);
+      itoa(storage.getMatrixBrightness(), buffer, 10);
     }
   } else if (strcmp(mainCategory, contrastSectionName) == 0 && strcmp(subCategory, lcdSectionName) == 0) {
-    itoa(eepromManager.getLcdContrast(), buffer, 10);
+    itoa(storage.getLcdContrast(), buffer, 10);
   } else if (strcmp(mainCategory, nameSection) == 0 && strcmp(subCategory, playerNameSection) == 0) {
-    eepromManager.getPlayerName(buffer);
+    storage.getPlayerName(buffer);
   } else {
     *buffer = NULL;
   }
 }
 
 void Menu::handleJoystickMenuPress() {
-  if (!joystickManager.isPressed() || millis() - lastMenuPress < menuPressDelay) {
+  if (!joystick.isPressed() || millis() - lastMenuPress < menuPressDelay) {
     return;
   }
   lastMenuPress = millis();
@@ -194,7 +194,7 @@ void Menu::resetMenuOptions() {
 void Menu::handleJoystickMenuChange() {
   int oldRow = currMenuBombRow;
 
-  switch (joystickManager.getMovementDirection()) {
+  switch (joystick.getMovementDirection()) {
     case NONE:
       return;
     case UP:
@@ -246,7 +246,7 @@ void Menu::handlePlayerNameChange() {
   // blink current letter in name
   if (strcmp(currentSubMenu->label, nameSection) == 0 && currMenuBombRow == 0) {
     char playerName[7];
-    getSettingEepromValue(nameSection, playerNameSection, playerName);
+    getSettingStorageValue(nameSection, playerNameSection, playerName);
     char currLetter = playerName[currentNameIdx];
     int writeIdx = strlen(playerNameSection) + 2;
     lcd.setCursor(writeIdx + currentNameIdx, currMenuBombRow);
@@ -262,15 +262,15 @@ void Menu::handlePlayerNameChange() {
 
 void Menu::handleNameLetterChange(int direction) {
   lastNameLetterBlink = millis();
-  char currChar = eepromManager.getPlayerNameCharacter(currentNameIdx);
+  char currChar = storage.getPlayerNameCharacter(currentNameIdx);
   char newValue = (currChar + direction >= 'a' && currChar + direction <= 'z') ? currChar + direction : currChar; 
-  eepromManager.updatePlayerNameCharacter(currentNameIdx, newValue);
+  storage.updatePlayerNameCharacter(currentNameIdx, newValue);
 }
 
 void Menu::handlePlayerNameEdit(int direction) {
   if (isEditingName) {
     int newValue = currentNameIdx + direction;
-    currentNameIdx = (newValue >= 0 && newValue < eepromManager.playerNameSize - 1) ? newValue : currentNameIdx;
+    currentNameIdx = (newValue >= 0 && newValue < storage.playerNameSize - 1) ? newValue : currentNameIdx;
   }
 }
 
@@ -288,7 +288,7 @@ void Menu::handleScrollText(int valueMultiplier) {
   if (strcmp(currentSubMenu->label, howToPlaySectionName) == 0) {
     // checking the bomb row for the submenu because of the long text of the "how to play" description
     if (currMenuBombRow == 0) {
-      updateMenuScrollTextIndex(howToPlaySectionStartIndex, valueMultiplier, eepromManager.howToPlaySize);
+      updateMenuScrollTextIndex(howToPlaySectionStartIndex, valueMultiplier, storage.howToPlaySize);
     }
   }
 }
@@ -306,12 +306,12 @@ void Menu::handleBrightnessAndContrastUpdates(int valueMultiplier) {
 
   if (strcmp(currentSubMenu->label, brightnessSectionName) == 0) {
     if (strcmp(currentSubOption->label, lcdSectionName) == 0) {
-      eepromManager.updateSettingsValue(lcdBrightnessUpdateStep * valueMultiplier, minLcdBrightness, maxLcdBrightness, eepromManager.lcdBrightnessIndex);
+      storage.updateSettingsValue(lcdBrightnessUpdateStep * valueMultiplier, minLcdBrightness, maxLcdBrightness, storage.lcdBrightnessIndex);
     } else if (strcmp(currentSubOption->label, matrixSectionName) == 0) {
-      eepromManager.updateSettingsValue(matrixBrightnessUpdateStep * valueMultiplier, minMatrixBrightness, maxMatrixBrightness, eepromManager.matrixBrightnessIndex);
+      storage.updateSettingsValue(matrixBrightnessUpdateStep * valueMultiplier, minMatrixBrightness, maxMatrixBrightness, storage.matrixBrightnessIndex);
     }
   } else if (strcmp(currentSubMenu->label, contrastSectionName) == 0) {
-    eepromManager.updateSettingsValue(lcdContrastUpdateStep * valueMultiplier, minLcdContrast, maxLcdContrast, eepromManager.lcdContrastIndex);
+    storage.updateSettingsValue(lcdContrastUpdateStep * valueMultiplier, minLcdContrast, maxLcdContrast, storage.lcdContrastIndex);
   }
 }
 

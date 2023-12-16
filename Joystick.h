@@ -1,5 +1,5 @@
-#ifndef JOYSTICK_MANAGER_H
-#define JOYSTICK_MANAGER_H
+#ifndef JOYSTICK_H
+#define JOYSTICK_H
 
 #include "Arduino.h"
 
@@ -11,9 +11,9 @@ enum Direction {
   NONE
 };
 
-class JoystickManager {
+class Joystick {
 public:
-  JoystickManager(int xPin, int yPin, int switchPin, bool commonAnode);
+  Joystick(int xPin, int yPin, int switchPin, bool commonAnode);
 
   void handleInput();
   Direction getMovementDirection();
@@ -25,7 +25,7 @@ private:
   const int maxValue = 1023;
   const int movementMinThreshold = 350;
   const int movementMaxThreshold = 650;
-  const int switchPressDebounceDelay = 10;
+  const int switchPressDebounceDelay = 5;
 
   int xPin;
   int yPin;

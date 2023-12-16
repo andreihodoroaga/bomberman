@@ -1,9 +1,9 @@
-#ifndef EEPROM_HANDLER_H
-#define EEPROM_HANDLER_H
+#ifndef STORAGE_H
+#define STORAGE_H
 
 #include "EEPROM.h"
 
-class EEPROMManager {
+class Storage {
 public:
   const int howToPlayStartIndex = 6;
   const int howToPlayEndIndex = 114; 

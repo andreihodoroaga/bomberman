@@ -3,8 +3,8 @@
 
 #include "LiquidCrystal.h"
 #include "Arduino.h"
-#include "JoystickManager.h"
-#include "EEPROMManager.h"
+#include "Joystick.h"
+#include "Storage.h"
 
 struct MenuItem {
   char* label;
@@ -20,8 +20,8 @@ struct MenuItem {
 class Menu {
 private:
   LiquidCrystal& lcd;
-  JoystickManager& joystickManager;
-  EEPROMManager& eepromManager;
+  Joystick& joystick;
+  Storage& storage;
 
   const int minLcdBrightness = 0;
   const int maxLcdBrightness = 200;
@@ -117,7 +117,7 @@ private:
   void displaySettingsValue(int row, MenuItem* subOption);
   MenuItem* getNthSubOption(int n);
   int getCurrentSubMenuSize();
-  void getSettingEepromValue(char* mainCategory, char* subCategory, char* buffer);
+  void getSettingStorageValue(char* mainCategory, char* subCategory, char* buffer);
   int getTextStartIndex(char* label);
   void handleScrollText(int valueMultiplier);
   void updateMenuScrollTextIndex(int& index, int valueMultiplier, int sectionNameLength);
@@ -132,7 +132,7 @@ public:
   const int bombCharIndex = 0;
   bool canStartGame = false;
 
-  Menu(LiquidCrystal& lcdObj, JoystickManager& joystickManagerObj, EEPROMManager& eepromManagerObj);
+  Menu(LiquidCrystal& lcdObj, Joystick& joystickObj, Storage& storageObj);
   void displayGreetingsOnLCD();
   void displayLCDMenu();
   void displayGameInfo(int bombsUsed, unsigned long elapsedTime);

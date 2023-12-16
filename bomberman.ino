@@ -1,8 +1,8 @@
 #include "LedControl.h"
 #include "Menu.h"
 #include "LiquidCrystal.h"
-#include "JoystickManager.h"
-#include "EEPROMManager.h"
+#include "Joystick.h"
+#include "Storage.h"
 
 // Joystick
 const int joystickXPin = A0;
@@ -10,8 +10,8 @@ const int joystickYPin = A1;
 const int joystickSwitchPin = 2;
 const bool joystickCommonAnode = false;
 
-JoystickManager joystickManager(joystickXPin, joystickYPin, joystickSwitchPin, joystickCommonAnode);
-EEPROMManager eepromManager;
+Joystick joystick(joystickXPin, joystickYPin, joystickSwitchPin, joystickCommonAnode);
+Storage storage;
 
 // Matrix
 const byte dinPin = 12;
@@ -87,7 +87,7 @@ const int lcdContrastPin = 9;
 const int lcdBrightnessPin = 3;
 
 // LCD menu stuff
-Menu lcdMenu(lcd, joystickManager, eepromManager);
+Menu lcdMenu(lcd, joystick, storage);
 byte bombChar[] = {
   B00010,
   B00100,
@@ -110,20 +110,18 @@ void setup() {
 
   pinMode(lcdBrightnessPin, OUTPUT);
   pinMode(lcdContrastPin, OUTPUT);
-  analogWrite(lcdBrightnessPin, 128);
-  analogWrite(lcdContrastPin, 145);
   lcd.begin(16, 2);
   lcd.clear();
   lcdMenu.greetingsShownTime = millis();
   lcd.createChar(lcdMenu.bombCharIndex, bombChar);
 
-  // eepromManager.writeString(eepromManager.howToPlayStartIndex, "Blast through the board, drop bombs by pressing the joystick, and dash away! Watch out, the boom gets bigger!");
-  // eepromManager.writeString(eepromManager.playerNameStartIndex, "player");
+  // storage.writeString(storage.howToPlayStartIndex, "Blast through the board, drop bombs by pressing the joystick, and dash away! Watch out, the boom gets bigger!");
+  // storage.writeString(storage.playerNameStartIndex, "player");
 }
 
 void loop() {
   applyConfigurationSettings();
-  joystickManager.handleInput();
+  joystick.handleInput();
 
   if (gameState == IN_MENU) {
     lcdMenu.displayGreetingsOnLCD();
@@ -144,13 +142,13 @@ void loop() {
     resetGame();
     resetGameOnJoystickLongPress();
   } else {
-    handleResetGame(); 
+    handleResetGame();
     handleJoystickPressEndGame();
   }
 }
 
 void resetGameOnJoystickLongPress() {
-  if (joystickManager.isLongPressed()) {
+  if (joystick.isLongPressed()) {
     gameState = RESET;
   }
 }
@@ -162,9 +160,9 @@ void handleStartGameChange() {
 }
 
 void handleJoystickPressEndGame() {
-  if (joystickManager.isPressed()) {
+  if (joystick.isPressed()) {
     waitingForUserInputEndGame = false;
-    delay(200); // add a small delay before taking the user to the menu
+    delay(200);  // add a small delay before taking the user to the menu
   }
 }
 
@@ -176,9 +174,9 @@ void calculateElapsedTime() {
 }
 
 void applyConfigurationSettings() {
-  analogWrite(lcdBrightnessPin, eepromManager.getLcdBrightness());
-  analogWrite(lcdContrastPin, eepromManager.getLcdContrast());
-  lc.setIntensity(0, eepromManager.getMatrixBrightness());
+  analogWrite(lcdBrightnessPin, storage.getLcdBrightness());
+  analogWrite(lcdContrastPin, storage.getLcdContrast());
+  lc.setIntensity(0, storage.getMatrixBrightness());
 }
 
 void handleBombPlacement() {
@@ -186,7 +184,7 @@ void handleBombPlacement() {
     return;
   }
 
-  if (!joystickManager.isPressed() || bombPlaced) {
+  if (!joystick.isPressed() || bombPlaced) {
     return;
   }
 
@@ -257,11 +255,12 @@ void displayBoardOnMatrix() {
 }
 
 void handlePlayerMovement() {
-  if (joystickManager.getMovementDirection() == NONE) {
+  if (joystick.getMovementDirection() == NONE) {
     return;
   }
 
-  switch (joystickManager.getMovementDirection()) {
+  lastPlayerBlinkTime = millis();
+  switch (joystick.getMovementDirection()) {
     case LEFT:
       if (playerPositionCol == 0 || board[playerPositionRow][playerPositionCol - 1]) {
         return;
@@ -365,13 +364,13 @@ void resetGame() {
 
 void blinkMatrixLed(int row, int col, unsigned long& lastBlinkTime, int blinkDuration) {
   if (millis() - lastBlinkTime < blinkDuration) {
-    return;
-  }
-  if (millis() - lastBlinkTime < 2 * blinkDuration) {
     lc.setLed(0, row, col, true);
     return;
   }
-  lc.setLed(0, row, col, false);
+  if (millis() - lastBlinkTime < 2 * blinkDuration) {
+    lc.setLed(0, row, col, false);
+    return;
+  }
   lastBlinkTime = millis();
 }
 

@@ -1,6 +1,6 @@
-#include "JoystickManager.h"
+#include "Joystick.h"
 
-JoystickManager::JoystickManager(int xPin, int yPin, int switchPin, bool commonAnode)
+Joystick::Joystick(int xPin, int yPin, int switchPin, bool commonAnode)
   : xPin(xPin), yPin(yPin), switchPin(switchPin), commonAnode(commonAnode) {
   xValue = 0;
   yValue = 0;
@@ -18,7 +18,7 @@ JoystickManager::JoystickManager(int xPin, int yPin, int switchPin, bool commonA
   }
 }
 
-void JoystickManager::handleInput() {
+void Joystick::handleInput() {
   xValue = analogRead(xPin);
   yValue = analogRead(yPin);
   yValue = maxValue - yValue;
@@ -39,19 +39,19 @@ void JoystickManager::handleInput() {
   handlePress();
 }
 
-Direction JoystickManager::getMovementDirection() {
+Direction Joystick::getMovementDirection() {
   return movementDirection;
 }
 
-bool JoystickManager::isPressed() {
+bool Joystick::isPressed() {
   return pressed;
 }
 
-bool JoystickManager::isLongPressed() {
+bool Joystick::isLongPressed() {
   return longPressed;
 }
 
-void JoystickManager::handleDirectionChange() {
+void Joystick::handleDirectionChange() {
   if (xValue < movementMinThreshold) {
     movementDirection = LEFT;
   }
@@ -66,19 +66,17 @@ void JoystickManager::handleDirectionChange() {
   }
 }
 
-void JoystickManager::handlePress() {
+void Joystick::handlePress() {
   switchState = digitalRead(switchPin) == LOW ? HIGH : LOW;
-  
+
   if (switchState != previousSwitchState) {
     lastSwitchStateUpdate = millis();
   }
+  previousSwitchState = switchState;
 
   if (millis() - lastSwitchStateUpdate > switchPressDebounceDelay) {
-    if (pressed != switchState) {
-      pressed = switchState;
-    }
+    pressed = switchState;
   }
-  previousSwitchState = switchState; 
 
   longPressed = false;
   if (switchState == HIGH && millis() - lastSwitchStateUpdate > longPressTimeThreshold) {
