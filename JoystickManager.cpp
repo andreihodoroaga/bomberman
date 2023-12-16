@@ -1,4 +1,3 @@
-#include "HardwareSerial.h"
 #include "JoystickManager.h"
 
 JoystickManager::JoystickManager(int xPin, int yPin, int switchPin, bool commonAnode)

@@ -116,6 +116,9 @@ void setup() {
   lcd.clear();
   lcdMenu.greetingsShownTime = millis();
   lcd.createChar(lcdMenu.bombCharIndex, bombChar);
+
+  // eepromManager.writeString(eepromManager.howToPlayStartIndex, "Blast through the board, drop bombs by pressing the joystick, and dash away! Watch out, the boom gets bigger!");
+  // eepromManager.writeString(eepromManager.playerNameStartIndex, "player");
 }
 
 void loop() {

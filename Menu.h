@@ -38,6 +38,7 @@ private:
   const int brightnessNumberColIdx = 9;
   const int endGameMessageUpdateRate = 500;
   const int scrollMenuStep = 5;
+  const int menuPressDelay = 400;
 
   char* backSectionName = "Back";
   char* aboutSectionName = "About";
@@ -46,13 +47,17 @@ private:
   char* contrastSectionName = "Contrast";
   char* lcdSectionName = "LCD";
   char* matrixSectionName = "Matrix";
-  char* githubLink = "https://github.com/andreihodoroaga/introductiontorobotics";
+  char* howToPlaySectionName = "How to play";
+  char* nameSection = "Name";
+  char* playerNameSection = "Name:";
+  char* githubLink = "https://github.com/andreihodoroaga/bomberman";
   char* creatorName = "By Andrei Hodoroaga";
 
   MenuItem mainMenu = { "Main menu", NULL, NULL, NULL };
   MenuItem menuBack = { backSectionName, NULL, NULL, NULL };
 
-  MenuItem menuHighScore = { "High Score", &mainMenu, NULL, NULL };
+  MenuItem menuHowToPlay = { howToPlaySectionName, &mainMenu, NULL, NULL };
+  MenuItem menuHighScore = { "High Score", &mainMenu, NULL, &menuHowToPlay };
   MenuItem menuSettings = { "Settings", &mainMenu, NULL, &menuHighScore };
   MenuItem menuAbout = { aboutSectionName, &mainMenu, NULL, &menuSettings };
   MenuItem menuStart = { startSectionName, &mainMenu, NULL, &menuAbout };
@@ -61,14 +66,16 @@ private:
   MenuItem highScoreTwo = { "2. ", &menuHighScore, NULL, &highScoreThree };
   MenuItem highScoreOne = { "1. ", &menuHighScore, NULL, &highScoreTwo };
 
-  MenuItem settingsName = { "Name", &menuSettings, NULL, &menuBack };
-  MenuItem settingsSounds = { "Sounds", &menuSettings, NULL, &settingsName };
-  MenuItem settingsBrightness = { brightnessSectionName, &menuSettings, NULL, &settingsSounds };
-  MenuItem settingsContrast = { contrastSectionName, &menuSettings, NULL, &settingsBrightness };
+  MenuItem settingsContrast = { contrastSectionName, &menuSettings, NULL, &menuBack };
+  MenuItem settingsBrightness = { brightnessSectionName, &menuSettings, NULL, &settingsContrast };
+  MenuItem settingsSounds = { "Sounds", &menuSettings, NULL, &settingsBrightness };
+  MenuItem settingsName = { nameSection, &menuSettings, NULL, &settingsSounds };
 
-  MenuItem namePlayer = { "Name: ", &settingsName, NULL, &menuBack };
+  MenuItem namePlayer = { playerNameSection, &settingsName, NULL, &menuBack };
 
   MenuItem soundsBack = { "Back", &settingsSounds, NULL, NULL };
+
+  MenuItem howToPlay = { "", &menuHowToPlay, NULL, &menuBack };
 
   MenuItem brightnessLCD = { lcdSectionName, &settingsBrightness, NULL, &menuBack };
   MenuItem brightnessMatrix = { "Matrix", &settingsBrightness, NULL, &brightnessLCD };
@@ -93,8 +100,13 @@ private:
   int currMenuBombRow = 0;
   int aboutSectionNameStartIndex = 0;
   int aboutSectionGitLinkStartIndex = 0;
+  int howToPlaySectionStartIndex = 0;
   int lastEndGameLetterIdx = 0;
   unsigned long lastEndGameLetterChange = 0;
+  int currentNameIdx = 0;
+  bool isEditingName = false;
+  unsigned long lastNameLetterBlink = 0;
+  const int nameLetterBlinkDelay = 500;
 
   void displayTextOnLCD(const char* text, int textStartIndex, int col, int line);
   void displayCurrentMenuOptions();
@@ -105,10 +117,13 @@ private:
   void displaySettingsValue(int row, MenuItem* subOption);
   MenuItem* getNthSubOption(int n);
   int getCurrentSubMenuSize();
-  int getSettingEepromValue(char* mainCategory, char* subCategory);
+  void getSettingEepromValue(char* mainCategory, char* subCategory, char* buffer);
   int getTextStartIndex(char* label);
   void handleScrollText(int valueMultiplier);
-  void updateMenuScrollTextIndex(int& index, int valueMultiplier, char* sectionName);
+  void updateMenuScrollTextIndex(int& index, int valueMultiplier, int sectionNameLength);
+  void handlePlayerNameEdit(int direction);
+  void handlePlayerNameChange();
+  void handleNameLetterChange(int direction);
 public:
   unsigned long greetingsShownTime = 0;
   bool displayMenu = false;
