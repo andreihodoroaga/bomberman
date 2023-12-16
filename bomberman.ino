@@ -3,6 +3,7 @@
 #include "LiquidCrystal.h"
 #include "Joystick.h"
 #include "Storage.h"
+#include "Buzzer.h"
 
 // Joystick
 const int joystickXPin = A0;
@@ -12,6 +13,7 @@ const bool joystickCommonAnode = false;
 
 Joystick joystick(joystickXPin, joystickYPin, joystickSwitchPin, joystickCommonAnode);
 Storage storage;
+Buzzer buzzer;
 
 // Matrix
 const byte dinPin = 12;
@@ -102,18 +104,16 @@ const char* endGameMessages[2] = { "Good job!", "Keep trying!" };
 
 void setup() {
   Serial.begin(9600);
-
   pinMode(joystickSwitchPin, INPUT_PULLUP);
-
   lc.shutdown(0, false);
   lc.clearDisplay(0);
-
   pinMode(lcdBrightnessPin, OUTPUT);
   pinMode(lcdContrastPin, OUTPUT);
   lcd.begin(16, 2);
   lcd.clear();
   lcdMenu.greetingsShownTime = millis();
   lcd.createChar(lcdMenu.bombCharIndex, bombChar);
+  pinMode(Buzzer::pin, OUTPUT);
 
   // storage.writeString(storage.howToPlayStartIndex, "Blast through the board, drop bombs by pressing the joystick, and dash away! Watch out, the boom gets bigger!");
   // storage.writeString(storage.playerNameStartIndex, "player");
@@ -144,6 +144,10 @@ void loop() {
   } else {
     handleResetGame();
     handleJoystickPressEndGame();
+  }
+
+  if (buzzer.isPlaying) {
+    buzzer.play(50, 1000);
   }
 }
 
@@ -259,6 +263,8 @@ void handlePlayerMovement() {
     return;
   }
 
+  buzzer.isPlaying = true;
+  buzzer.lastBuzzerPlayTime = millis();
   lastPlayerBlinkTime = millis();
   switch (joystick.getMovementDirection()) {
     case LEFT:
