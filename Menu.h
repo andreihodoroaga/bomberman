@@ -40,54 +40,51 @@ private:
   const int scrollMenuStep = 5;
   const int menuPressDelay = 400;
 
-  char* backSectionName = "Back";
-  char* aboutSectionName = "About";
-  char* startSectionName = "Start";
-  char* brightnessSectionName = "Brightness";
-  char* contrastSectionName = "Contrast";
-  char* lcdSectionName = "LCD";
-  char* matrixSectionName = "Matrix";
-  char* howToPlaySectionName = "How to play";
-  char* nameSection = "Name";
-  char* playerNameSection = "Name:";
-  char* githubLink = "https://github.com/andreihodoroaga/bomberman";
-  char* creatorName = "By Andrei Hodoroaga";
+  const char* backSectionName = "Back";
+  const char* aboutSectionName = "About";
+  const char* startSectionName = "Start";
+  const char* brightnessSectionName = "Brightness";
+  const char* contrastSectionName = "Contrast";
+  const char* lcdSectionName = "LCD";
+  const char* matrixSectionName = "Matrix";
+  const char* howToPlaySectionName = "How to play";
+  const char* nameSection = "Name";
+  const char* playerNameSection = "Name:";
+  const char* githubLink = "https://github.com/andreihodoroaga/bomberman";
+  const char* creatorName = "By Andrei Hodoroaga";
+  const char* soundSectionLabel = "Sounds";
+  const char* highScoreSection = "High Score";
+  const char* highScoreLabels[Storage::numStoredHighScores] = { "1.", "2.", "3." };
 
   MenuItem mainMenu = { "Main menu", NULL, NULL, NULL };
   MenuItem menuBack = { backSectionName, NULL, NULL, NULL };
+  MenuItem* currentSubMenu = &mainMenu;
 
   MenuItem menuHowToPlay = { howToPlaySectionName, &mainMenu, NULL, NULL };
-  MenuItem menuHighScore = { "High Score", &mainMenu, NULL, &menuHowToPlay };
+  MenuItem menuHighScore = { highScoreSection, &mainMenu, NULL, &menuHowToPlay };
   MenuItem menuSettings = { "Settings", &mainMenu, NULL, &menuHighScore };
   MenuItem menuAbout = { aboutSectionName, &mainMenu, NULL, &menuSettings };
   MenuItem menuStart = { startSectionName, &mainMenu, NULL, &menuAbout };
-
-  MenuItem highScoreThree = { "3. ", &menuHighScore, NULL, &menuBack };
-  MenuItem highScoreTwo = { "2. ", &menuHighScore, NULL, &highScoreThree };
-  MenuItem highScoreOne = { "1. ", &menuHighScore, NULL, &highScoreTwo };
-
-  MenuItem settingsContrast = { contrastSectionName, &menuSettings, NULL, &menuBack };
+  MenuItem highScoreThree = { highScoreLabels[2], &menuHighScore, NULL, &menuBack };
+  MenuItem highScoreTwo = { highScoreLabels[1], &menuHighScore, NULL, &highScoreThree };
+  MenuItem highScoreOne = { highScoreLabels[0], &menuHighScore, NULL, &highScoreTwo };
+  MenuItem settingsResetHighScores = { "Reset scores", &menuSettings, NULL, &menuBack };
+  MenuItem settingsContrast = { contrastSectionName, &menuSettings, NULL, &settingsResetHighScores };
   MenuItem settingsBrightness = { brightnessSectionName, &menuSettings, NULL, &settingsContrast };
-  MenuItem settingsSounds = { "Sounds", &menuSettings, NULL, &settingsBrightness };
+  MenuItem settingsSounds = { soundSectionLabel, &menuSettings, NULL, &settingsBrightness };
   MenuItem settingsName = { nameSection, &menuSettings, NULL, &settingsSounds };
-
   MenuItem namePlayer = { playerNameSection, &settingsName, NULL, &menuBack };
-
-  MenuItem soundsBack = { "Back", &settingsSounds, NULL, NULL };
-
+  MenuItem soundsSetting = { "", &settingsSounds, NULL, &menuBack };
   MenuItem howToPlay = { "", &menuHowToPlay, NULL, &menuBack };
-
   MenuItem brightnessLCD = { lcdSectionName, &settingsBrightness, NULL, &menuBack };
   MenuItem brightnessMatrix = { "Matrix", &settingsBrightness, NULL, &brightnessLCD };
-
   MenuItem contrastLCD = { lcdSectionName, &settingsContrast, NULL, &menuBack };
-
   MenuItem aboutGithubLink = { githubLink, &menuAbout, NULL, &menuBack };
   MenuItem aboutCreatorName = { creatorName, &menuAbout, NULL, &aboutGithubLink };
   MenuItem aboutGameName = { "Bomberman", &menuAbout, NULL, &aboutCreatorName };
 
-  MenuItem* currentSubMenu = &mainMenu;
-
+  const char* soundOnLabel = "On";
+  const char* soundOffLabel = "Off";
   const char* greetingsTexts[2] = { "Welcome to", "Bomberman!" };
   const char* gameInfoTexts[2] = { "Bombs used: ", "Elapsed time: " };
   const char* endGameContinueText = "Press on the joystick to continue...";
@@ -107,6 +104,13 @@ private:
   bool isEditingName = false;
   unsigned long lastNameLetterBlink = 0;
   const int nameLetterBlinkDelay = 500;
+  const int maxSettingsValueLength = 12;
+  unsigned long resetScoresIconShowTime = 0;
+  const int showResetScoresIconTime = 1000;
+  bool showResetIcon = false;
+  const int maxScoreDigits = 4;
+  const int resetScoresIconCol = 14;
+  const int resetScoresIconRow = 0;
 
   void displayTextOnLCD(const char* text, int textStartIndex, int col, int line);
   void displayCurrentMenuOptions();
@@ -124,12 +128,17 @@ private:
   void handlePlayerNameEdit(int direction);
   void handlePlayerNameChange();
   void handleNameLetterChange(int direction);
+  char* getSoundsSetting();
+  void getHighScoreForPlayer(char* buffer, int index);
+  void resetHighScores();
+  void showResetScoresIcon();
 public:
   unsigned long greetingsShownTime = 0;
   bool displayMenu = false;
   bool displayIntro = true;
   bool displayMenuOptions = false;
   const int bombCharIndex = 0;
+  const int resetHighScoresCharIndex = 1;
   bool canStartGame = false;
 
   Menu(LiquidCrystal& lcdObj, Joystick& joystickObj, Storage& storageObj);

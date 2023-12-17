@@ -18,11 +18,18 @@ public:
   const int playerNameEndIndex = 120;
   const int boardStartIndex = 150;
   const int boardEndIndex = 404;
+  const int soundsSettingIndex = 405;
+  const int highScoreStartIndex = 406;
+  static const int numStoredHighScores = 3;
+  const int highScoreNamesStartIndex = 412;
   const int boardSize = 16;
   const int howToPlaySize = howToPlayEndIndex - howToPlayStartIndex + 2;  // the +2 includes the null character
   const int playerNameSize = playerNameEndIndex - playerNameStartIndex + 2;
+  const int defaultHighScoreValue = -1;
 
-  int getValueAtIndex(int index);
+  int getIntValueAtIndex(int index);
+  byte getByteValueAtIndex(int index);
+  void updateValueAtIndex(int index, byte value);
   void updateSettingsValue(int updateValue, int minValue, int maxValue, int eepromIndex);
   int getLcdBrightness();
   int getLcdContrast();
@@ -35,6 +42,10 @@ public:
   char getPlayerNameCharacter(int index);
   byte getBoard(int i, int j);
   void updateBoard(int i, int j, byte val);
+  int getHighScore(int index);
+  void setHighScore(int index, int value);
+  const char* getHighScorePlayerName(char* buffer, int index);
+  void setHighScorePlayerName(const char* str, int index);
 };
 
 #endif

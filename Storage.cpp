@@ -3,14 +3,22 @@
 
 int Storage::matrixWrites = 0;
 
-int Storage::getValueAtIndex(int index) {
+int Storage::getIntValueAtIndex(int index) {
   int value;
   EEPROM.get(index, value);
   return value;
 }
 
+byte Storage::getByteValueAtIndex(int index) {
+  return EEPROM.read(index);
+}
+
+void Storage::updateValueAtIndex(int index, byte value) {
+  EEPROM.put(index, value);
+}
+
 void Storage::updateSettingsValue(int updateValue, int minValue, int maxValue, int eepromIndex) {
-  int currentValue = getValueAtIndex(eepromIndex);
+  int currentValue = getIntValueAtIndex(eepromIndex);
   int value = currentValue + updateValue;
   if (value < minValue || value > maxValue) {
     value = currentValue;
@@ -19,15 +27,15 @@ void Storage::updateSettingsValue(int updateValue, int minValue, int maxValue, i
 }
 
 int Storage::getLcdBrightness() {
-  return getValueAtIndex(lcdBrightnessIndex);
+  return getIntValueAtIndex(lcdBrightnessIndex);
 }
 
 int Storage::getLcdContrast() {
-  return getValueAtIndex(lcdContrastIndex);
+  return getIntValueAtIndex(lcdContrastIndex);
 }
 
 int Storage::getMatrixBrightness() {
-  return getValueAtIndex(matrixBrightnessIndex);
+  return getIntValueAtIndex(matrixBrightnessIndex);
 }
 
 const char* Storage::getHowToPlayMessage(char* buffer) {
@@ -36,6 +44,16 @@ const char* Storage::getHowToPlayMessage(char* buffer) {
 
 const char* Storage::getPlayerName(char* buffer) {
   return getString(playerNameStartIndex, playerNameEndIndex, buffer);
+}
+
+const char* Storage::getHighScorePlayerName(char* buffer, int index) {
+  int startIndex = highScoreNamesStartIndex + index * (playerNameSize - 1); // -1 for the null character
+  return getString(startIndex, startIndex + playerNameSize - 2, buffer);
+}
+
+void Storage::setHighScorePlayerName(const char* str, int index) {
+  int addr = highScoreNamesStartIndex + index * (playerNameSize - 1);
+  writeString(addr, str);
 }
 
 const char* Storage::getString(const int startIndex, const int endIndex, char* buffer) {
@@ -65,7 +83,7 @@ char Storage::getPlayerNameCharacter(int index) {
 }
 
 byte Storage::getBoard(int i, int j) {
-  return getValueAtIndex(getBoardIndex(i, j));
+  return getIntValueAtIndex(getBoardIndex(i, j));
 }
 
 void Storage::updateBoard(int i, int j, byte val) {
@@ -77,4 +95,18 @@ void Storage::updateBoard(int i, int j, byte val) {
 
 int Storage::getBoardIndex(int i, int j) {
   return boardStartIndex + boardSize * i + j;
+}
+
+int Storage::getHighScore(int index) {
+  if (index >= numStoredHighScores) {
+    return -1;
+  }
+  return getIntValueAtIndex(highScoreStartIndex + index * sizeof(index));
+}
+
+void Storage::setHighScore(int index, int value) {
+  if (index >= numStoredHighScores) {
+    return;
+  }
+  EEPROM.put(highScoreStartIndex + index * sizeof(index), value);
 }

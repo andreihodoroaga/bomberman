@@ -8,7 +8,8 @@ Menu::Menu(LiquidCrystal& lcdObj, Joystick& joystickObj, Storage& storageObj)
   menuSettings.addFirstChild(&settingsName);
   menuAbout.addFirstChild(&aboutGameName);
   settingsName.addFirstChild(&namePlayer);
-  settingsSounds.addFirstChild(&soundsBack);
+  soundsSetting.label = getSoundsSetting();
+  settingsSounds.addFirstChild(&soundsSetting);
   settingsBrightness.addFirstChild(&brightnessMatrix);
   settingsContrast.addFirstChild(&contrastLCD);
   menuHowToPlay.addFirstChild(&howToPlay);
@@ -71,6 +72,7 @@ void Menu::displayLCDMenu() {
   handlePlayerNameChange();
   handleJoystickMenuChange();
   handleJoystickMenuPress();
+  showResetScoresIcon();
 }
 
 void Menu::displayTextOnLCD(const char* text, int textStartIndex, int col, int line) {
@@ -126,13 +128,16 @@ int Menu::getTextStartIndex(char* label) {
 }
 
 void Menu::displaySettingsValue(int row, MenuItem* subOption) {
-  if (currentSubMenu->label != brightnessSectionName && currentSubMenu->label != contrastSectionName && currentSubMenu->label != nameSection) {
+  if (currentSubMenu->label != brightnessSectionName &&
+      currentSubMenu->label != contrastSectionName &&
+      currentSubMenu->label != nameSection &&
+      currentSubMenu->label != highScoreSection) {
     return;
   }
 
   int writeIdx = strlen(subOption->label) + 2;  // +2 because of the bomb at index 0
-  lcd.setCursor(writeIdx, row);
-  char settingValue[7];
+  lcd.setCursor(writeIdx, row % 2);
+  char settingValue[maxSettingsValueLength];
   getSettingStorageValue(currentSubMenu->label, subOption->label, settingValue);
   if (settingValue == NULL) {
     return;
@@ -151,9 +156,29 @@ void Menu::getSettingStorageValue(char* mainCategory, char* subCategory, char* b
     itoa(storage.getLcdContrast(), buffer, 10);
   } else if (strcmp(mainCategory, nameSection) == 0 && strcmp(subCategory, playerNameSection) == 0) {
     storage.getPlayerName(buffer);
+  } else if (strcmp(mainCategory, highScoreSection) == 0) {
+    if (strcmp(subCategory, highScoreLabels[0]) == 0) {
+      getHighScoreForPlayer(buffer, 0);
+    } else if (strcmp(subCategory, highScoreLabels[1]) == 0) {
+      getHighScoreForPlayer(buffer, 1);
+    } else if (strcmp(subCategory, highScoreLabels[2]) == 0) {
+      getHighScoreForPlayer(buffer, 2);
+    } else {
+      *buffer = NULL;
+    }
   } else {
     *buffer = NULL;
   }
+}
+
+void Menu::getHighScoreForPlayer(char* buffer, int index) {
+  char name[storage.playerNameSize];
+  char score[maxScoreDigits];
+  storage.getHighScorePlayerName(name, index);
+  itoa(storage.getHighScore(index), score, 10);
+  strcpy(buffer, name);
+  buffer[storage.playerNameSize - 1] = ' ';
+  strcpy(buffer + storage.playerNameSize, score);
 }
 
 void Menu::handleJoystickMenuPress() {
@@ -175,8 +200,19 @@ void Menu::handleJoystickMenuPress() {
     resetMenuOptions();
     return;
   }
+  if (strcmp(selectedMenuItem->label, settingsResetHighScores.label) == 0) {
+    resetHighScores();
+    showResetIcon = true;
+    resetScoresIconShowTime = millis();
+  }
   if (strcmp(currentSubMenu->label, nameSection) == 0 && strcmp(selectedMenuItem->label, playerNameSection) == 0) {
     isEditingName = !isEditingName;
+    displayMenuOptions = true;
+  }
+  if (strcmp(currentSubMenu->label, soundSectionLabel) == 0 && strcmp(selectedMenuItem->label, soundsSetting.label) == 0) {
+    byte soundOn = storage.getByteValueAtIndex(storage.soundsSettingIndex);
+    storage.updateValueAtIndex(storage.soundsSettingIndex, !soundOn);
+    soundsSetting.label = getSoundsSetting();
     displayMenuOptions = true;
   }
   if (selectedMenuItem->firstChild != NULL) {
@@ -245,7 +281,7 @@ void Menu::handlePlayerNameChange() {
 
   // blink current letter in name
   if (strcmp(currentSubMenu->label, nameSection) == 0 && currMenuBombRow == 0) {
-    char playerName[7];
+    char playerName[storage.playerNameSize];
     getSettingStorageValue(nameSection, playerNameSection, playerName);
     char currLetter = playerName[currentNameIdx];
     int writeIdx = strlen(playerNameSection) + 2;
@@ -263,7 +299,7 @@ void Menu::handlePlayerNameChange() {
 void Menu::handleNameLetterChange(int direction) {
   lastNameLetterBlink = millis();
   char currChar = storage.getPlayerNameCharacter(currentNameIdx);
-  char newValue = (currChar + direction >= 'a' && currChar + direction <= 'z') ? currChar + direction : currChar; 
+  char newValue = (currChar + direction >= 'a' && currChar + direction <= 'z') ? currChar + direction : currChar;
   storage.updatePlayerNameCharacter(currentNameIdx, newValue);
 }
 
@@ -332,6 +368,11 @@ void Menu::displayGameInfo(int bombsUsed, unsigned long elapsedTime) {
   lcd.print(elapsedTime);
 }
 
+char* Menu::getSoundsSetting() {
+  byte soundOn = storage.getByteValueAtIndex(storage.soundsSettingIndex);
+  return soundOn ? soundOnLabel : soundOffLabel;
+}
+
 void Menu::displayEndGameMessage(const char* text) {
   if (millis() - lastEndGameLetterChange > endGameMessageUpdateRate) {
     lcd.clear();
@@ -341,5 +382,25 @@ void Menu::displayEndGameMessage(const char* text) {
     lastEndGameLetterChange = millis();
     int textNotOnScreenSize = strlen(endGameContinueText) - lcdCols + 2;
     lastEndGameLetterIdx = (lastEndGameLetterIdx + 1) % textNotOnScreenSize;
+  }
+}
+
+void Menu::resetHighScores() {
+  for (int i = 0; i < storage.numStoredHighScores; i++) {
+    storage.setHighScore(i, storage.defaultHighScoreValue);
+    storage.setHighScorePlayerName(' ', i);
+  }
+}
+
+void Menu::showResetScoresIcon() {
+  if (!showResetIcon || !strcmp(currentSubMenu->label, settingsResetHighScores.label)) {
+    return;
+  }
+  lcd.setCursor(resetScoresIconCol, resetScoresIconRow);
+  lcd.write(resetHighScoresCharIndex);
+  if (millis() - resetScoresIconShowTime > showResetScoresIconTime) {
+    showResetIcon = false;
+    lcd.setCursor(resetScoresIconCol, resetScoresIconRow);
+    lcd.write(' ');
   }
 }

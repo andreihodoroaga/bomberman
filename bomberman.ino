@@ -53,6 +53,7 @@ int bombPositionCol = -1;
 int bombsUsed = 0;
 unsigned long lastSavedElapsedTime = 0;
 unsigned long elapsedTime;  // in seconds
+const int maxHighScoreAllowed = 9999;
 const int oneSecondInMs = 1000;
 bool waitingForUserInputEndGame = true;
 const int displayedBoardSize = 8;
@@ -103,6 +104,16 @@ byte bombChar[] = {
   B01110,
   B00000
 };
+byte resetHighScoresChar[] = {
+  B00000,
+  B00001,
+  B00011,
+  B10110,
+  B11100,
+  B01000,
+  B00000,
+  B00000
+};
 const char* endGameMessages[2] = { "Good job!", "Keep trying!" };
 
 void setup() {
@@ -116,6 +127,7 @@ void setup() {
   lcd.clear();
   lcdMenu.greetingsShownTime = millis();
   lcd.createChar(lcdMenu.bombCharIndex, bombChar);
+  lcd.createChar(lcdMenu.resetHighScoresCharIndex, resetHighScoresChar);
   pinMode(Buzzer::pin, OUTPUT);
   boardSize = storage.boardSize;
 
@@ -269,6 +281,7 @@ void handlePlayerMovement() {
   if (joystick.getMovementDirection() == NONE) {
     return;
   }
+  setHighScore();
 
   buzzer.isPlaying = true;
   buzzer.lastBuzzerPlayTime = millis();
@@ -401,6 +414,25 @@ void blinkMatrixLed(int row, int col, unsigned long& lastBlinkTime, int blinkDur
   lastBlinkTime = millis();
 }
 
+void setHighScore() {
+  char currentPlayer[storage.playerNameSize];
+  storage.getPlayerName(currentPlayer);
+  unsigned long currentScore = elapsedTime <= maxHighScoreAllowed ? elapsedTime : maxHighScoreAllowed;
+  int newScoreIdx = -1;
+  for (int i = 0; i < storage.numStoredHighScores; i++) {
+    int currHighScore = storage.getHighScore(i);
+    if (currentScore < currHighScore || currHighScore == storage.defaultHighScoreValue) {
+      newScoreIdx = i;
+      break;
+    }
+  }
+  if (newScoreIdx == -1) {
+    return;
+  }
+  storage.setHighScore(newScoreIdx, currentScore);
+  storage.setHighScorePlayerName(currentPlayer, newScoreIdx);
+}
+
 // this function and the emojis are from here:
 // https://techatronic.com/facial-expression-on-8x8-led-matrix-using-arduino/
 void printByte(byte character[]) {
@@ -451,5 +483,3 @@ void printDisplayedBoard() {
     Serial.println();
   }
 }
-
-
