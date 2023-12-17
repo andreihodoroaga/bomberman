@@ -1,6 +1,7 @@
 #include "EEPROM.h"
 #include "Storage.h"
-#include "Arduino.h"
+
+int Storage::matrixWrites = 0;
 
 int Storage::getValueAtIndex(int index) {
   int value;
@@ -61,4 +62,19 @@ void Storage::updatePlayerNameCharacter(int nameIndex, char newChr) {
 
 char Storage::getPlayerNameCharacter(int index) {
   return EEPROM.read(playerNameStartIndex + index);
+}
+
+byte Storage::getBoard(int i, int j) {
+  return getValueAtIndex(getBoardIndex(i, j));
+}
+
+void Storage::updateBoard(int i, int j, byte val) {
+  if (getBoard(i, j) != val) {
+    matrixWrites += 1;
+  }
+  EEPROM.put(getBoardIndex(i, j), val);
+}
+
+int Storage::getBoardIndex(int i, int j) {
+  return boardStartIndex + boardSize * i + j;
 }

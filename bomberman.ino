@@ -32,8 +32,7 @@ const int loadingImageChangeTime = 500;
 bool playerMoved = false;
 
 // Game
-const int boardSize = 8;
-int board[boardSize][boardSize];
+int boardSize;
 bool shouldResetGame = true;
 int playerPositionRow;
 int playerPositionCol;
@@ -56,6 +55,10 @@ unsigned long lastSavedElapsedTime = 0;
 unsigned long elapsedTime;  // in seconds
 const int oneSecondInMs = 1000;
 bool waitingForUserInputEndGame = true;
+const int displayedBoardSize = 8;
+// The lower bounds of the visible board (<=8)
+int displayedBoardStartRow = 0;
+int displayedBoardStartCol = 0;
 enum GameState {
   IN_MENU,
   PLAYING,
@@ -114,6 +117,7 @@ void setup() {
   lcdMenu.greetingsShownTime = millis();
   lcd.createChar(lcdMenu.bombCharIndex, bombChar);
   pinMode(Buzzer::pin, OUTPUT);
+  boardSize = storage.boardSize;
 
   // storage.writeString(storage.howToPlayStartIndex, "Blast through the board, drop bombs by pressing the joystick, and dash away! Watch out, the boom gets bigger!");
   // storage.writeString(storage.playerNameStartIndex, "player");
@@ -146,9 +150,9 @@ void loop() {
     handleJoystickPressEndGame();
   }
 
-  if (buzzer.isPlaying) {
-    buzzer.play(50, 1000);
-  }
+  // if (buzzer.isPlaying) {
+  //   buzzer.play(50, 1000);
+  // }
 }
 
 void resetGameOnJoystickLongPress() {
@@ -192,7 +196,7 @@ void handleBombPlacement() {
     return;
   }
 
-  board[playerPositionRow][playerPositionCol] = bomb;
+  storage.updateBoard(playerPositionRow, playerPositionCol, bomb);
   bombPlacementTime = millis();
   bombPlaced = true;
   bombsUsed += 1;
@@ -208,7 +212,7 @@ void explodeBomb() {
 
   for (int i = 0; i < boardSize; i++) {
     for (int j = 0; j < boardSize; j++) {
-      if (board[i][j] == bomb) {
+      if (storage.getBoard(i, j) == bomb) {
         bombPositionRow = i;
         bombPositionCol = j;
       }
@@ -226,7 +230,7 @@ void destroyArea(int row, int col, bool animate) {
 }
 
 void updateNeighborsBomb(int row, int col, bool animate) {
-  int newValue = animate ? 1 : 0;
+  byte newValue = animate ? 1 : 0;
   const int animationLen = 5;
   int directionsDestroyAnimation[animationLen][2] = { { 0, 0 }, { 0, -1 }, { 0, 1 }, { -1, 0 }, { 1, 0 } };
 
@@ -234,7 +238,7 @@ void updateNeighborsBomb(int row, int col, bool animate) {
     int newRow = row + directionsDestroyAnimation[i][0];
     int newCol = col + directionsDestroyAnimation[i][1];
     if (newRow >= 0 && newRow < boardSize && newCol >= 0 && newCol < boardSize) {
-      board[newRow][newCol] = newValue;
+      storage.updateBoard(newRow, newCol, newValue);
       if (!animate && playerPositionRow == newRow && playerPositionCol == newCol) {
         gameState = LOST;
       }
@@ -243,16 +247,19 @@ void updateNeighborsBomb(int row, int col, bool animate) {
 }
 
 void displayBoardOnMatrix() {
-  for (int i = 0; i < boardSize; i++) {
-    for (int j = 0; j < boardSize; j++) {
-      if (board[i][j] == wall) {
-        lc.setLed(0, i, j, true);
-      } else if (board[i][j] == bomb) {
-        blinkMatrixLed(i, j, lastBombBlinkTime, fastBlinkTime);
+  for (int i = displayedBoardStartRow; i < displayedBoardSize + displayedBoardStartRow; i++) {
+    for (int j = displayedBoardStartCol; j < displayedBoardSize + displayedBoardStartCol; j++) {
+      int matrixI = i - displayedBoardStartRow;  
+      int matrixJ = j - displayedBoardStartCol;  
+
+      if (storage.getBoard(i, j) == wall) {
+        lc.setLed(0, matrixI, matrixJ, true);
+      } else if (storage.getBoard(i, j) == bomb) {
+        blinkMatrixLed(matrixI, matrixJ, lastBombBlinkTime, fastBlinkTime);
       } else if (i == playerPositionRow && j == playerPositionCol) {
-        blinkMatrixLed(i, j, lastPlayerBlinkTime, slowBlinkTime);
-      } else if (board[i][j] == empty) {
-        lc.setLed(0, i, j, false);
+        blinkMatrixLed(matrixI, matrixJ, lastPlayerBlinkTime, slowBlinkTime);
+      } else if (storage.getBoard(i, j) == empty) {
+        lc.setLed(0, matrixI, matrixJ, false);
       }
     }
   }
@@ -268,28 +275,40 @@ void handlePlayerMovement() {
   lastPlayerBlinkTime = millis();
   switch (joystick.getMovementDirection()) {
     case LEFT:
-      if (playerPositionCol == 0 || board[playerPositionRow][playerPositionCol - 1]) {
+      if (playerPositionCol == 0 || storage.getBoard(playerPositionRow, playerPositionCol - 1)) {
         return;
       }
       playerPositionCol -= 1;
+      if (playerPositionCol == displayedBoardSize - 1) {
+        displayedBoardStartCol = 0;
+      }
       break;
     case RIGHT:
-      if (playerPositionCol == boardSize - 1 || board[playerPositionRow][playerPositionCol + 1]) {
+      if (playerPositionCol == boardSize - 1 || storage.getBoard(playerPositionRow, playerPositionCol + 1)) {
         return;
       }
       playerPositionCol += 1;
+      if (playerPositionCol == displayedBoardSize) {
+        displayedBoardStartCol = displayedBoardSize;
+      }
       break;
     case DOWN:
-      if (playerPositionRow == boardSize - 1 || board[playerPositionRow + 1][playerPositionCol]) {
+      if (playerPositionRow == boardSize - 1 || storage.getBoard(playerPositionRow + 1, playerPositionCol)) {
         return;
       }
       playerPositionRow += 1;
+      if (playerPositionRow == displayedBoardSize) {
+        displayedBoardStartRow = displayedBoardSize;  
+      }
       break;
     case UP:
-      if (playerPositionRow == 0 || board[playerPositionRow - 1][playerPositionCol]) {
+      if (playerPositionRow == 0 || storage.getBoard(playerPositionRow - 1, playerPositionCol)) {
         return;
       }
       playerPositionRow -= 1;
+      if (playerPositionRow == displayedBoardSize - 1) {
+        displayedBoardStartRow = 0;  
+      }
       break;
   }
 }
@@ -297,7 +316,7 @@ void handlePlayerMovement() {
 void checkGameWon() {
   for (int i = 0; i < boardSize; i++) {
     for (int j = 0; j < boardSize; j++) {
-      if (board[i][j] == wall) {
+      if (storage.getBoard(i, j) == wall) {
         return;
       }
     }
@@ -334,8 +353,10 @@ void resetGame() {
   bombPlacementTime = 0;
   bombPositionRow = -1;
   bombPositionCol = -1;
-  playerPositionRow = random(boardSize);
-  playerPositionCol = random(boardSize);
+  displayedBoardStartRow = 0;
+  displayedBoardStartCol = 0;
+  playerPositionRow = random(displayedBoardSize);
+  playerPositionCol = random(displayedBoardSize);
   bombsUsed = 0;
   elapsedTime = 0;
   waitingForUserInputEndGame = true;
@@ -345,26 +366,26 @@ void resetGame() {
       // choosing the 0s and 1s on the board based on the difficulty
       int randomNum = random(maxDifficulty);
       if (randomNum < 3 * difficulty) {
-        board[i][j] = 1;
+        storage.updateBoard(i, j, 1);
       } else {
-        board[i][j] = 0;
+        storage.updateBoard(i, j, 0);
       }
     }
   }
 
   // leave some empty spaces near the player
-  board[playerPositionRow][playerPositionCol] = 0;
+  storage.updateBoard(playerPositionRow, playerPositionCol, 1);
   if (playerPositionRow > 0) {
-    board[playerPositionRow - 1][playerPositionCol] = 0;
+    storage.updateBoard(playerPositionRow, playerPositionCol, 0);
   }
   if (playerPositionRow < boardSize - 1) {
-    board[playerPositionRow + 1][playerPositionCol] = 0;
+    storage.updateBoard(playerPositionRow + 1, playerPositionCol, 0);
   }
   if (playerPositionCol > 0) {
-    board[playerPositionRow][playerPositionCol - 1] = 0;
+    storage.updateBoard(playerPositionRow, playerPositionCol - 1, 0);
   }
   if (playerPositionCol < boardSize - 1) {
-    board[playerPositionRow][playerPositionCol + 1] = 0;
+    storage.updateBoard(playerPositionRow, playerPositionCol + 1, 0);
   }
 }
 
@@ -409,3 +430,26 @@ void displayImage(uint64_t image) {
     }
   }
 }
+
+// TODO: Remove
+void printBoard() {
+  for (int i = 0; i < boardSize; i++) {
+    for (int j = 0; j < boardSize; j++) {
+      Serial.print(storage.getBoard(i, j));
+      Serial.print(" ");
+    }
+    Serial.println();
+  }
+}
+
+void printDisplayedBoard() {
+  for (int i = displayedBoardStartRow; i < displayedBoardStartRow + displayedBoardSize; i++) {
+    for (int j = displayedBoardStartCol; j < displayedBoardStartCol + displayedBoardSize; j++) {
+      Serial.print(storage.getBoard(i, j));
+      Serial.print(" ");
+    }
+    Serial.println();
+  }
+}
+
+
