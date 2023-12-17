@@ -6,9 +6,9 @@
 
 class Storage {
 private:
-int getBoardIndex(int i, int j);
+  int getBoardIndex(int i, int j);
 public:
-  static int matrixWrites; // TODO: delete?
+  static int matrixWrites;  // TODO: delete?
   const int lcdBrightnessIndex = 0;
   const int lcdContrastIndex = 2;
   const int matrixBrightnessIndex = 4;
@@ -22,6 +22,7 @@ public:
   const int highScoreStartIndex = 406;
   static const int numStoredHighScores = 3;
   const int highScoreNamesStartIndex = 412;
+  const int roomIndex = 425;
   const int boardSize = 16;
   const int howToPlaySize = howToPlayEndIndex - howToPlayStartIndex + 2;  // the +2 includes the null character
   const int playerNameSize = playerNameEndIndex - playerNameStartIndex + 2;
@@ -46,6 +47,8 @@ public:
   void setHighScore(int index, int value);
   const char* getHighScorePlayerName(char* buffer, int index);
   void setHighScorePlayerName(const char* str, int index);
+  byte getRoom();
+  void setRoom(int value);
 };
 
 #endif

@@ -86,7 +86,7 @@ private:
   const char* soundOnLabel = "On";
   const char* soundOffLabel = "Off";
   const char* greetingsTexts[2] = { "Welcome to", "Bomberman!" };
-  const char* gameInfoTexts[2] = { "Bombs used: ", "Elapsed time: " };
+  const char* gameInfoTexts[2] = { "Used: ", "Room: " };
   const char* endGameContinueText = "Press on the joystick to continue...";
 
   int oldBombsUsed = -1;
@@ -111,6 +111,8 @@ private:
   const int maxScoreDigits = 4;
   const int resetScoresIconCol = 14;
   const int resetScoresIconRow = 0;
+  const int clockIconDisplayCol = 11;
+  const int clockIconDisplayRow = 0;
 
   void displayTextOnLCD(const char* text, int textStartIndex, int col, int line);
   void displayCurrentMenuOptions();
@@ -139,6 +141,7 @@ public:
   bool displayMenuOptions = false;
   const int bombCharIndex = 0;
   const int resetHighScoresCharIndex = 1;
+  const int clockCharIndex = 2;
   bool canStartGame = false;
 
   Menu(LiquidCrystal& lcdObj, Joystick& joystickObj, Storage& storageObj);

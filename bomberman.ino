@@ -60,6 +60,8 @@ const int displayedBoardSize = 8;
 // The lower bounds of the visible board (<=8)
 int displayedBoardStartRow = 0;
 int displayedBoardStartCol = 0;
+byte currentRoom = 1;
+int roomNumbers[4] = { 1, 2, 3, 4 };
 enum GameState {
   IN_MENU,
   PLAYING,
@@ -114,6 +116,16 @@ byte resetHighScoresChar[] = {
   B00000,
   B00000
 };
+byte clockChar[] = {
+  B00000,
+  B01110,
+  B10101,
+  B10111,
+  B10001,
+  B01110,
+  B00000,
+  B00000
+};
 const char* endGameMessages[2] = { "Good job!", "Keep trying!" };
 
 void setup() {
@@ -128,6 +140,7 @@ void setup() {
   lcdMenu.greetingsShownTime = millis();
   lcd.createChar(lcdMenu.bombCharIndex, bombChar);
   lcd.createChar(lcdMenu.resetHighScoresCharIndex, resetHighScoresChar);
+  lcd.createChar(lcdMenu.clockCharIndex, clockChar);
   pinMode(Buzzer::pin, OUTPUT);
   boardSize = storage.boardSize;
 
@@ -151,6 +164,7 @@ void loop() {
     calculateElapsedTime();
     lcdMenu.displayGameInfo(bombsUsed, elapsedTime);
     handlePlayerMovement();
+    updateRoom();
     displayBoardOnMatrix();
     handleBombPlacement();
     explodeBomb();
@@ -165,6 +179,22 @@ void loop() {
   // if (buzzer.isPlaying) {
   //   buzzer.play(50, 1000);
   // }
+}
+
+void updateRoom() {
+  if (displayedBoardStartRow == 0 && displayedBoardStartCol == 0) {
+    currentRoom = roomNumbers[0];
+  } 
+  if (displayedBoardStartRow == 0 && displayedBoardStartCol == displayedBoardSize) {
+    currentRoom = roomNumbers[1];
+  } 
+  if (displayedBoardStartRow == displayedBoardSize && displayedBoardStartCol == 0) {
+    currentRoom = roomNumbers[2];
+  } 
+  if (displayedBoardStartRow == displayedBoardSize && displayedBoardStartCol == displayedBoardSize) {
+    currentRoom = roomNumbers[3];
+  } 
+  storage.setRoom(currentRoom);
 }
 
 void resetGameOnJoystickLongPress() {
@@ -281,7 +311,6 @@ void handlePlayerMovement() {
   if (joystick.getMovementDirection() == NONE) {
     return;
   }
-  setHighScore();
 
   buzzer.isPlaying = true;
   buzzer.lastBuzzerPlayTime = millis();
@@ -335,6 +364,7 @@ void checkGameWon() {
     }
   }
   gameState = WON;
+  updateHighScores();
 }
 
 void handleResetGame() {
@@ -414,7 +444,7 @@ void blinkMatrixLed(int row, int col, unsigned long& lastBlinkTime, int blinkDur
   lastBlinkTime = millis();
 }
 
-void setHighScore() {
+void updateHighScores() {
   char currentPlayer[storage.playerNameSize];
   storage.getPlayerName(currentPlayer);
   unsigned long currentScore = elapsedTime <= maxHighScoreAllowed ? elapsedTime : maxHighScoreAllowed;

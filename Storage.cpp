@@ -110,3 +110,11 @@ void Storage::setHighScore(int index, int value) {
   }
   EEPROM.put(highScoreStartIndex + index * sizeof(index), value);
 }
+
+byte Storage::getRoom() {
+  return getByteValueAtIndex(roomIndex);
+}
+
+void Storage::setRoom(int value) {
+  EEPROM.put(roomIndex, value);
+}

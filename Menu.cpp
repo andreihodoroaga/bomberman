@@ -365,6 +365,10 @@ void Menu::displayGameInfo(int bombsUsed, unsigned long elapsedTime) {
   lcd.write(bombCharIndex);
   lcd.setCursor(0, 1);
   lcd.print(gameInfoTexts[1]);
+  lcd.print(storage.getRoom());
+  lcd.setCursor(clockIconDisplayCol, clockIconDisplayRow);
+  lcd.write(clockCharIndex);
+  lcd.setCursor(clockIconDisplayCol + 1, clockIconDisplayRow);
   lcd.print(elapsedTime);
 }
 
