@@ -6,11 +6,12 @@ This repository contains the final project for the "Introduction to Robotics" co
 - [Game Description](#Game-Description)
 - [How to Play](#How-to-Play)
 - [Components Used](#Components-Used)
-- [Photo](#Photo)
+- [Photos](#Photos)
 - [Video](#Video)
 
 ## Intro
-Growing up Bomberman was one of my favorite games, and I remember playing countless hours of an online multiplayer version against my brother. (I rarely won🙂) <br>
+Growing up Bomberman was one of my favorite games, and I remember playing countless hours of an online multiplayer version against my brother. (I rarely won🙂) <br><br>
+![Original bomberman photo](photos/original_bomberman.png)<br><br>
 When I was assigned the task of creating a game of choice on Arduino, I knew it would be a great occasion to rebuild one of my old-school favorites.
 It proved to be quite a challenge, as I was constrained by the little memory of the Arduino Uno, but nevertheless a fun one.
 
@@ -23,7 +24,7 @@ In my version, the player has to destroy all the walls in four different rooms a
 2. Use the joystick to move the player (the blinking dot) around the grid
 3. Place bombs by pressing the joystick
 4. Destroy all walls in the four rooms as fast as possible
-5. Fight for a place in the leaderboard :rocket:
+5. Fight for a place on the leaderboard :rocket:
 
 ## Components Used
 - Arduino Uno board
@@ -41,6 +42,8 @@ In my version, the player has to destroy all the walls in four different rooms a
 - hook-up wires
 
 ## Photo
+![Photo 1 of my Arduino setup](photos/setup1.jpeg)
+![Photo 2 of my Arduino setup](photos/setup2.jpeg)
 
 ## Video
-
+https://youtu.be/zTOJoWmgitI
