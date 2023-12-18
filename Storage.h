@@ -8,7 +8,6 @@ class Storage {
 private:
   int getBoardIndex(int i, int j);
 public:
-  static int matrixWrites;  // TODO: delete?
   const int lcdBrightnessIndex = 0;
   const int lcdContrastIndex = 2;
   const int matrixBrightnessIndex = 4;

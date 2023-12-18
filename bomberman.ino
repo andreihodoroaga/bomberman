@@ -83,6 +83,7 @@ const uint64_t loadingStateImages[] = {
 };
 const uint64_t trophyImg = 0x3c1818183c7e7e7e;
 const int imagesLen = sizeof(loadingStateImages) / 8;
+const int animationCharLength = 8;
 byte smile[8] = { 0x3C, 0x42, 0xA5, 0x81, 0xA5, 0x99, 0x42, 0x3C };
 byte sad[8] = { 0x3C, 0x42, 0xA5, 0x81, 0x99, 0xA5, 0x42, 0x3C };
 
@@ -327,7 +328,6 @@ void updateNeighborsBomb(int row, int col, bool animate) {
   }
 }
 
-// returns 1 if the bombed cell was a wall
 void bombCell(int row, int col, int animate) {
   byte newValue = animate ? 1 : 0;
 
@@ -541,7 +541,7 @@ void updateHighScores() {
 // https://techatronic.com/facial-expression-on-8x8-led-matrix-using-arduino/
 void printByte(byte character[]) {
   int i = 0;
-  for (i = 0; i < 8; i++) {
+  for (i = 0; i < animationCharLength; i++) {
     lc.setRow(0, i, character[i]);
   }
 }
@@ -559,31 +559,10 @@ void displayLoadingStateOnMatrix() {
 
 // https://xantorohara.github.io/led-matrix-editor/#
 void displayImage(uint64_t image) {
-  for (int i = 0; i < 8; i++) {
-    byte row = (image >> i * 8) & 0xFF;
-    for (int j = 0; j < 8; j++) {
+  for (int i = 0; i < animationCharLength; i++) {
+    byte row = (image >> i * animationCharLength) & 0xFF;
+    for (int j = 0; j < animationCharLength; j++) {
       lc.setLed(0, i, j, bitRead(row, j));
     }
-  }
-}
-
-// TODO: Remove
-void printBoard() {
-  for (int i = 0; i < boardSize; i++) {
-    for (int j = 0; j < boardSize; j++) {
-      Serial.print(storage.getBoard(i, j));
-      Serial.print(" ");
-    }
-    Serial.println();
-  }
-}
-
-void printDisplayedBoard() {
-  for (int i = displayedBoardStartRow; i < displayedBoardStartRow + displayedBoardSize; i++) {
-    for (int j = displayedBoardStartCol; j < displayedBoardStartCol + displayedBoardSize; j++) {
-      Serial.print(storage.getBoard(i, j));
-      Serial.print(" ");
-    }
-    Serial.println();
   }
 }

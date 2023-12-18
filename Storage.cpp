@@ -1,8 +1,6 @@
 #include "EEPROM.h"
 #include "Storage.h"
 
-int Storage::matrixWrites = 0;
-
 int Storage::getIntValueAtIndex(int index) {
   int value;
   EEPROM.get(index, value);
@@ -88,9 +86,6 @@ byte Storage::getBoard(int i, int j) {
 }
 
 void Storage::updateBoard(int i, int j, byte val) {
-  if (getBoard(i, j) != val) {
-    matrixWrites += 1;
-  }
   EEPROM.put(getBoardIndex(i, j), val);
 }
 

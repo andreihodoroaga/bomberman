@@ -41,7 +41,7 @@ In my version, the player has to destroy all the walls in four different rooms a
 - joystick
 - hook-up wires
 
-## Photo
+## Photos
 ![Photo 1 of my Arduino setup](photos/setup1.jpeg)
 ![Photo 2 of my Arduino setup](photos/setup2.jpeg)
 
