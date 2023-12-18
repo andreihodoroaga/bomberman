@@ -25,15 +25,16 @@ private:
   Storage& storage;
   Buzzer& buzzer;
 
-  const int minLcdBrightness = 0;
-  const int maxLcdBrightness = 200;
-  const int minLcdContrast = 0;
-  const int maxLcdContrast = 200;
+  const int numericalSettingSteps = 15;
+  const int minLcdBrightness = 30;
+  const int lcdBrightnessUpdateStep = 10;
+  const int maxLcdBrightness = minLcdBrightness + lcdBrightnessUpdateStep * numericalSettingSteps;
+  const int minLcdContrast = 120;
+  const int lcdContrastUpdateStep = 2;
+  const int maxLcdContrast = minLcdContrast + lcdContrastUpdateStep * numericalSettingSteps;
   const int minMatrixBrightness = 0;
-  const int maxMatrixBrightness = 15;
-  const int lcdBrightnessUpdateStep = 5;
-  const int lcdContrastUpdateStep = 5;
   const int matrixBrightnessUpdateStep = 1;
+  const int maxMatrixBrightness = minMatrixBrightness + matrixBrightnessUpdateStep * numericalSettingSteps;
   const int displayIntroMessageTime = 1000;
   const int lcdRows = 2;
   const int lcdCols = 16;
@@ -136,6 +137,7 @@ private:
   void getHighScoreForPlayer(char* buffer, int index);
   void resetHighScores();
   void showResetScoresIcon();
+  const int getDisplayedNumericalSetting(int value, int minValue, int step);
 public:
   unsigned long greetingsShownTime = 0;
   bool displayMenu = false;

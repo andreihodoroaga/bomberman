@@ -20,6 +20,7 @@ void Storage::updateValueAtIndex(int index, byte value) {
 void Storage::updateSettingsValue(int updateValue, int minValue, int maxValue, int eepromIndex) {
   int currentValue = getIntValueAtIndex(eepromIndex);
   int value = currentValue + updateValue;
+  Serial.println(value);
   if (value < minValue || value > maxValue) {
     value = currentValue;
   }

@@ -149,6 +149,7 @@ void setup() {
   pinMode(Buzzer::pin, OUTPUT);
   boardSize = storage.boardSize;
 
+  // uncomment these lines to set default values in storage
   // storage.writeString(storage.howToPlayStartIndex, "Blast through the board, drop bombs by pressing the joystick, and dash away! Watch out, the boom gets bigger!");
   // storage.writeString(storage.playerNameStartIndex, "player");
 }

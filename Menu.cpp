@@ -146,14 +146,17 @@ void Menu::displaySettingsValue(int row, MenuItem* subOption) {
 }
 
 void Menu::getSettingStorageValue(char* mainCategory, char* subCategory, char* buffer) {
-  if (strcmp(mainCategory, brightnessSectionName) == 0) {
+  if (strcmp(mainCategory, brightnessSectionName) == 0 && currMenuBombRow < 2) {
     if (strcmp(subCategory, lcdSectionName) == 0) {
-      itoa(storage.getLcdBrightness(), buffer, 10);
+      const int displayedBrightness = getDisplayedNumericalSetting(storage.getLcdBrightness(), minLcdBrightness, lcdBrightnessUpdateStep);
+      itoa(displayedBrightness, buffer, 10);
     } else if (strcmp(subCategory, matrixSectionName) == 0) {
-      itoa(storage.getMatrixBrightness(), buffer, 10);
+      const int displayedMatrixBrightness = getDisplayedNumericalSetting(storage.getMatrixBrightness(), minMatrixBrightness, matrixBrightnessUpdateStep);
+      itoa(displayedMatrixBrightness, buffer, 10);
     }
-  } else if (strcmp(mainCategory, contrastSectionName) == 0 && strcmp(subCategory, lcdSectionName) == 0) {
-    itoa(storage.getLcdContrast(), buffer, 10);
+  } else if (strcmp(mainCategory, contrastSectionName) == 0 && strcmp(subCategory, lcdSectionName) == 0) { 
+      const int displayedLcdContrast = getDisplayedNumericalSetting(storage.getLcdContrast(), minLcdContrast, lcdContrastUpdateStep);
+    itoa(displayedLcdContrast, buffer, 10);
   } else if (strcmp(mainCategory, nameSection) == 0 && strcmp(subCategory, playerNameSection) == 0) {
     storage.getPlayerName(buffer);
   } else if (strcmp(mainCategory, highScoreSection) == 0) {
@@ -169,6 +172,10 @@ void Menu::getSettingStorageValue(char* mainCategory, char* subCategory, char* b
   } else {
     *buffer = NULL;
   }
+}
+
+const int Menu::getDisplayedNumericalSetting(int value, int minValue, int step) {
+  return (value - minValue) / step;
 }
 
 void Menu::getHighScoreForPlayer(char* buffer, int index) {
