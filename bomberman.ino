@@ -24,8 +24,9 @@ LedControl lc = LedControl(dinPin, clockPin, loadPin, 1);
 byte matrixBrightness = 2;
 
 // Menu
-int difficulty = 1;  // TODO: get from lcd menu for project
-int maxDifficulty = 15;
+int difficulty = 1;
+const int difficultyMultiplier = 3;
+int minDifficultyNumber = 15;
 int lastImgIdx = 0;
 unsigned long lastLoadingImageDisplayTime = 0;
 const int loadingImageChangeTime = 500;
@@ -62,6 +63,7 @@ int displayedBoardStartRow = 0;
 int displayedBoardStartCol = 0;
 int roomNumbers[4] = { 1, 2, 3, 4 };
 int bombRadius = 1;
+int newHighScoreIdxCurrPlayer = -1;
 enum GameState {
   IN_MENU,
   PLAYING,
@@ -79,6 +81,7 @@ const uint64_t loadingStateImages[] = {
   0x00001c0000000000,
   0x00003c0000000000
 };
+const uint64_t trophyImg = 0x3c1818183c7e7e7e;
 const int imagesLen = sizeof(loadingStateImages) / 8;
 byte smile[8] = { 0x3C, 0x42, 0xA5, 0x81, 0xA5, 0x99, 0x42, 0x3C };
 byte sad[8] = { 0x3C, 0x42, 0xA5, 0x81, 0x99, 0xA5, 0x42, 0x3C };
@@ -126,6 +129,8 @@ byte clockChar[] = {
   B00000,
   B00000
 };
+char* highScoreBeatMessage = "You are now #";
+const int highScoreBeatMessageLen = strlen(highScoreBeatMessage);
 const char* endGameMessages[2] = { "Good job!", "Keep trying!" };
 
 void setup() {
@@ -199,7 +204,7 @@ void updateRoom() {
 
   if (!bombPlaced) {
     updateBombRadius(currentRoom);
-  }  
+  }
 }
 
 void updateBombRadius(byte currentRoom) {
@@ -415,8 +420,18 @@ void checkGameWon() {
 
 void handleResetGame() {
   if (gameState == WON) {
-    printByte(smile);
-    lcdMenu.displayEndGameMessage(endGameMessages[0]);
+    if (newHighScoreIdxCurrPlayer != -1) {      
+      char buffer[highScoreBeatMessageLen + 1];
+      strcpy(buffer, highScoreBeatMessage);
+      char highScoreIdx[1];
+      itoa(newHighScoreIdxCurrPlayer + 1, highScoreIdx, 10);
+      strcpy(buffer + highScoreBeatMessageLen, highScoreIdx);
+      lcdMenu.displayEndGameMessage(buffer);
+      displayImage(trophyImg);
+    } else {
+      printByte(smile);
+      lcdMenu.displayEndGameMessage(endGameMessages[0]);
+    }
   } else if (gameState == LOST) {
     printByte(sad);
     lcdMenu.displayEndGameMessage(endGameMessages[1]);
@@ -449,12 +464,13 @@ void resetGame() {
   bombsUsed = 0;
   elapsedTime = 0;
   waitingForUserInputEndGame = true;
+  newHighScoreIdxCurrPlayer = -1;
 
   for (int i = 0; i < boardSize; i++) {
     for (int j = 0; j < boardSize; j++) {
       // choosing the 0s and 1s on the board based on the difficulty
-      int randomNum = random(maxDifficulty);
-      if (randomNum < 3 * difficulty) {
+      int randomNum = random(minDifficultyNumber);
+      if (randomNum < difficultyMultiplier * difficulty) {
         storage.updateBoard(i, j, 1);
       } else {
         storage.updateBoard(i, j, 0);
@@ -502,8 +518,18 @@ void updateHighScores() {
       break;
     }
   }
+  newHighScoreIdxCurrPlayer = newScoreIdx;
   if (newScoreIdx == -1) {
     return;
+  }
+  for (int i = storage.numStoredHighScores - 1; i >= newScoreIdx + 1; i--) {
+    int prevScore = storage.getHighScore(i - 1);
+    char prevName[storage.playerNameSize];
+    storage.getHighScorePlayerName(prevName, i - 1);
+    if (prevScore != storage.defaultHighScoreValue) {
+      storage.setHighScore(i, prevScore);
+      storage.setHighScorePlayerName(prevName, i);
+    }
   }
   storage.setHighScore(newScoreIdx, currentScore);
   storage.setHighScorePlayerName(currentPlayer, newScoreIdx);
