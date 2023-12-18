@@ -60,8 +60,8 @@ const int displayedBoardSize = 8;
 // The lower bounds of the visible board (<=8)
 int displayedBoardStartRow = 0;
 int displayedBoardStartCol = 0;
-byte currentRoom = 1;
 int roomNumbers[4] = { 1, 2, 3, 4 };
+int bombRadius = 1;
 enum GameState {
   IN_MENU,
   PLAYING,
@@ -182,19 +182,58 @@ void loop() {
 }
 
 void updateRoom() {
+  byte currentRoom = storage.getRoom();
   if (displayedBoardStartRow == 0 && displayedBoardStartCol == 0) {
     currentRoom = roomNumbers[0];
-  } 
+  }
   if (displayedBoardStartRow == 0 && displayedBoardStartCol == displayedBoardSize) {
     currentRoom = roomNumbers[1];
-  } 
+  }
   if (displayedBoardStartRow == displayedBoardSize && displayedBoardStartCol == 0) {
     currentRoom = roomNumbers[2];
-  } 
+  }
   if (displayedBoardStartRow == displayedBoardSize && displayedBoardStartCol == displayedBoardSize) {
     currentRoom = roomNumbers[3];
-  } 
+  }
   storage.setRoom(currentRoom);
+
+  if (!bombPlaced) {
+    updateBombRadius(currentRoom);
+  }  
+}
+
+void updateBombRadius(byte currentRoom) {
+  if (currentRoom == roomNumbers[1] && checkClearedRoom(roomNumbers[0])) {
+    bombRadius = 2;
+  } else if ((currentRoom == roomNumbers[2] || currentRoom == roomNumbers[3]) && checkClearedRoom(roomNumbers[1])) {
+    bombRadius = 3;
+  } else {
+    bombRadius = 1;
+  }
+}
+
+bool checkClearedRoom(int roomNumber) {
+  int roomStartRow = 0;
+  int roomStartCol = 0;
+
+  if (roomNumber == roomNumbers[1]) {
+    roomStartCol = displayedBoardSize;
+  } else if (roomNumber == roomNumbers[2]) {
+    roomStartRow = displayedBoardSize;
+  } else if (roomNumber == roomNumbers[3]) {
+    roomStartCol = displayedBoardSize;
+    roomStartRow = displayedBoardSize;
+  }
+
+  for (int i = roomStartRow; i < roomStartRow + displayedBoardSize; i++) {
+    for (int j = roomStartCol; j < roomStartCol + displayedBoardSize; j++) {
+      if (storage.getBoard(i, j) == wall) {
+        return false;
+      }
+    }
+  }
+
+  return true;
 }
 
 void resetGameOnJoystickLongPress() {
@@ -272,18 +311,25 @@ void destroyArea(int row, int col, bool animate) {
 }
 
 void updateNeighborsBomb(int row, int col, bool animate) {
-  byte newValue = animate ? 1 : 0;
-  const int animationLen = 5;
-  int directionsDestroyAnimation[animationLen][2] = { { 0, 0 }, { 0, -1 }, { 0, 1 }, { -1, 0 }, { 1, 0 } };
+  for (int i = -bombRadius; i <= bombRadius; i++) {
+    bombCell(row + i, col, animate);
+  }
+  for (int j = -bombRadius; j <= bombRadius; ++j) {
+    // already bombed the cell at (0, 0) in the previous for loop
+    if (j != 0) {
+      bombCell(row, col + j, animate);
+    }
+  }
+}
 
-  for (int i = 0; i < animationLen; ++i) {
-    int newRow = row + directionsDestroyAnimation[i][0];
-    int newCol = col + directionsDestroyAnimation[i][1];
-    if (newRow >= 0 && newRow < boardSize && newCol >= 0 && newCol < boardSize) {
-      storage.updateBoard(newRow, newCol, newValue);
-      if (!animate && playerPositionRow == newRow && playerPositionCol == newCol) {
-        gameState = LOST;
-      }
+// returns 1 if the bombed cell was a wall
+void bombCell(int row, int col, int animate) {
+  byte newValue = animate ? 1 : 0;
+
+  if (row >= 0 && row < boardSize && col >= 0 && col < boardSize) {
+    storage.updateBoard(row, col, newValue);
+    if (!animate && playerPositionRow == row && playerPositionCol == col) {
+      gameState = LOST;
     }
   }
 }
@@ -291,8 +337,8 @@ void updateNeighborsBomb(int row, int col, bool animate) {
 void displayBoardOnMatrix() {
   for (int i = displayedBoardStartRow; i < displayedBoardSize + displayedBoardStartRow; i++) {
     for (int j = displayedBoardStartCol; j < displayedBoardSize + displayedBoardStartCol; j++) {
-      int matrixI = i - displayedBoardStartRow;  
-      int matrixJ = j - displayedBoardStartCol;  
+      int matrixI = i - displayedBoardStartRow;
+      int matrixJ = j - displayedBoardStartCol;
 
       if (storage.getBoard(i, j) == wall) {
         lc.setLed(0, matrixI, matrixJ, true);
@@ -340,7 +386,7 @@ void handlePlayerMovement() {
       }
       playerPositionRow += 1;
       if (playerPositionRow == displayedBoardSize) {
-        displayedBoardStartRow = displayedBoardSize;  
+        displayedBoardStartRow = displayedBoardSize;
       }
       break;
     case UP:
@@ -349,7 +395,7 @@ void handlePlayerMovement() {
       }
       playerPositionRow -= 1;
       if (playerPositionRow == displayedBoardSize - 1) {
-        displayedBoardStartRow = 0;  
+        displayedBoardStartRow = 0;
       }
       break;
   }

@@ -111,8 +111,9 @@ void Storage::setHighScore(int index, int value) {
   EEPROM.put(highScoreStartIndex + index * sizeof(index), value);
 }
 
+// Returns the current room, or 1 if it is not previously set in eeprom.
 byte Storage::getRoom() {
-  return getByteValueAtIndex(roomIndex);
+  return getByteValueAtIndex(roomIndex) != 0 ? getByteValueAtIndex(roomIndex) : 1;
 }
 
 void Storage::setRoom(int value) {
