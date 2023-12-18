@@ -13,7 +13,7 @@ const bool joystickCommonAnode = false;
 
 Joystick joystick(joystickXPin, joystickYPin, joystickSwitchPin, joystickCommonAnode);
 Storage storage;
-Buzzer buzzer;
+Buzzer buzzer(storage);
 
 // Matrix
 const byte dinPin = 12;
@@ -90,15 +90,15 @@ byte sad[8] = { 0x3C, 0x42, 0xA5, 0x81, 0x99, 0xA5, 0x42, 0x3C };
 const byte rs = 13;
 const byte en = 8;
 const byte d4 = 7;
-const byte d5 = 6;
+const byte d5 = 3;
 const byte d6 = 5;
 const byte d7 = 4;
 LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 const int lcdContrastPin = 9;
-const int lcdBrightnessPin = 3;
+const int lcdBrightnessPin = 6;
 
 // LCD menu stuff
-Menu lcdMenu(lcd, joystick, storage);
+Menu lcdMenu(lcd, joystick, storage, buzzer);
 byte bombChar[] = {
   B00010,
   B00100,
@@ -181,9 +181,7 @@ void loop() {
     handleJoystickPressEndGame();
   }
 
-  // if (buzzer.isPlaying) {
-  //   buzzer.play(50, 1000);
-  // }
+  buzzer.play();
 }
 
 void updateRoom() {
@@ -305,6 +303,7 @@ void explodeBomb() {
     }
   }
   destroyArea(bombPositionRow, bombPositionCol, animate);
+  buzzer.startPlaying(explodeAnimationTime / 2, Buzzer::explodeBombFrequency);
 }
 
 // first animate the bomb going off and then destroy the walls
@@ -363,8 +362,6 @@ void handlePlayerMovement() {
     return;
   }
 
-  buzzer.isPlaying = true;
-  buzzer.lastBuzzerPlayTime = millis();
   lastPlayerBlinkTime = millis();
   switch (joystick.getMovementDirection()) {
     case LEFT:
@@ -496,6 +493,10 @@ void resetGame() {
 
 void blinkMatrixLed(int row, int col, unsigned long& lastBlinkTime, int blinkDuration) {
   if (millis() - lastBlinkTime < blinkDuration) {
+    if (blinkDuration == fastBlinkTime) {
+      buzzer.startPlaying(fastBlinkTime, Buzzer::fastBlinkFrequency);
+    }
+
     lc.setLed(0, row, col, true);
     return;
   }

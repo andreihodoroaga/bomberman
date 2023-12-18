@@ -5,6 +5,7 @@
 #include "Arduino.h"
 #include "Joystick.h"
 #include "Storage.h"
+#include "Buzzer.h"
 
 struct MenuItem {
   char* label;
@@ -22,6 +23,7 @@ private:
   LiquidCrystal& lcd;
   Joystick& joystick;
   Storage& storage;
+  Buzzer& buzzer;
 
   const int minLcdBrightness = 0;
   const int maxLcdBrightness = 200;
@@ -144,7 +146,7 @@ public:
   const int clockCharIndex = 2;
   bool canStartGame = false;
 
-  Menu(LiquidCrystal& lcdObj, Joystick& joystickObj, Storage& storageObj);
+  Menu(LiquidCrystal& lcdObj, Joystick& joystickObj, Storage& storageObj, Buzzer& buzzerObj);
   void displayGreetingsOnLCD();
   void displayLCDMenu();
   void displayGameInfo(int bombsUsed, unsigned long elapsedTime);

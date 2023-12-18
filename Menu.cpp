@@ -1,8 +1,8 @@
 #include "Arduino.h"
 #include "Menu.h"
 
-Menu::Menu(LiquidCrystal& lcdObj, Joystick& joystickObj, Storage& storageObj)
-  : lcd(lcdObj), joystick(joystickObj), storage(storageObj) {
+Menu::Menu(LiquidCrystal& lcdObj, Joystick& joystickObj, Storage& storageObj, Buzzer& buzzerObj)
+  : lcd(lcdObj), joystick(joystickObj), storage(storageObj), buzzer(buzzerObj) {
   mainMenu.addFirstChild(&menuStart);
   menuHighScore.addFirstChild(&highScoreOne);
   menuSettings.addFirstChild(&settingsName);
@@ -186,6 +186,7 @@ void Menu::handleJoystickMenuPress() {
     return;
   }
   lastMenuPress = millis();
+  buzzer.startPlaying(Buzzer::menuPressDuration, Buzzer::menuPressFrequency);
 
   MenuItem* selectedMenuItem = getNthSubOption(currMenuBombRow);
   if (strcmp(selectedMenuItem->label, startSectionName) == 0) {

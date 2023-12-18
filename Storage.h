@@ -18,11 +18,11 @@ public:
   const int playerNameEndIndex = 120;
   const int boardStartIndex = 150;
   const int boardEndIndex = 404;
-  const int soundsSettingIndex = 405;
   const int highScoreStartIndex = 406;
   static const int numStoredHighScores = 3;
   const int highScoreNamesStartIndex = 412;
   const int roomIndex = 425;
+  const int soundsSettingIndex = 450;
   const int boardSize = 16;
   const int howToPlaySize = howToPlayEndIndex - howToPlayStartIndex + 2;  // the +2 includes the null character
   const int playerNameSize = playerNameEndIndex - playerNameStartIndex + 2;
